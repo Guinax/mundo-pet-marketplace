@@ -11,7 +11,7 @@ async function render() {
  try {
   const body=await renderers[page]();if(token!==rendering)return;
   shell(page,body,state.user?state.profile?.full_name||'Sua conta conectada':'Mundo Pet');
-  if(page==='home'){updateCatalog(filter,search);const input=document.getElementById('mp-search');input.value=search;if(new URLSearchParams(location.search).has('explore'))document.getElementById('mp-catalog').scrollIntoView({block:'start'});}
+  if(page==='home'){updateCatalog(filter,search);const input=document.getElementById('mp-search');input.value=search;if(new URLSearchParams(location.search).has('explore'))document.getElementById('mp-catalog')?.scrollIntoView({block:'start'});}
  }catch(error){shell(page,`<div class="mp-runtime-error"><strong>Não foi possível carregar esta página.</strong><p>${esc(friendly(error))}</p>${btn('Tentar novamente','refresh')}</div>`);}
 }
 function friendly(error) {
