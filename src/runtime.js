@@ -111,7 +111,7 @@ const forms={
  'mp-auth-form':async(form,v)=>{
   if(form.dataset.mode==='signup'){
    const {data,error}=await db.auth.signUp({email:v.email.trim(),password:v.password,options:{data:{full_name:v.name.trim()},emailRedirectTo:location.origin+route.home+'?login=1'}});if(error)throw error;
-   if(!data.session){modal('Confirme seu e-mail',`<p style="margin-top:16px">Abra o link de confirmação enviado ao seu e-mail. Depois, volte ao Mundo Pet e entre com sua senha.</p><p class="mp-muted">Se o endereço já tiver cadastro, use a opção Entrar. Não compartilhe sua senha ou o link de confirmação.</p>${btn('Ir para entrar','login','mp-full')}`);return;}
+   if(!data.session){modal('Verifique seu cadastro',`<p style="margin-top:16px">Se você já possui uma conta, não precisa se cadastrar novamente: escolha Entrar ou Esqueci minha senha. Para contas novas, verifique sua caixa de entrada e spam para confirmar o endereço.</p><p class="mp-muted">Se o endereço já tiver cadastro, use a opção Entrar. Não compartilhe sua senha ou o link de confirmação.</p>${btn('Ir para entrar','login','mp-full')}`);return;}
    state.user=data.user;
   }else {const {data,error}=await db.auth.signInWithPassword({email:v.email.trim(),password:v.password});if(error)throw error;state.user=data.user;}
   await loadUser();closeModal();await render();toast('Conta conectada.');
