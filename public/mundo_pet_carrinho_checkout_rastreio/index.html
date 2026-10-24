@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mundo Pet - Carrinho &amp; Checkout</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Plus Jakarta Sans & Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "inverse-on-surface": "#edf0ff",
+            "on-secondary": "#ffffff",
+            "tertiary-fixed-dim": "#ffb3af",
+            "surface": "#f9f9ff",
+            "surface-variant": "#dce2f7",
+            "on-background": "#141b2b",
+            "background": "#f9f9ff",
+            "on-secondary-container": "#fefcff",
+            "tertiary": "#9c3c3b",
+            "outline": "#6d7a71",
+            "secondary-fixed-dim": "#b4c5ff",
+            "on-secondary-fixed": "#00174b",
+            "on-error": "#ffffff",
+            "primary": "#006947",
+            "on-error-container": "#93000a",
+            "surface-container-high": "#e1e8fd",
+            "surface-tint": "#006c49",
+            "surface-container-lowest": "#ffffff",
+            "error": "#ba1a1a",
+            "on-primary-fixed": "#002113",
+            "on-tertiary-fixed-variant": "#802728",
+            "inverse-primary": "#63dca6",
+            "surface-bright": "#f9f9ff",
+            "on-surface-variant": "#3d4a42",
+            "on-primary": "#ffffff",
+            "on-primary-container": "#f5fff6",
+            "inverse-surface": "#293040",
+            "surface-container-highest": "#dce2f7",
+            "secondary-fixed": "#dbe1ff",
+            "surface-dim": "#d3daef",
+            "on-primary-fixed-variant": "#005236",
+            "primary-container": "#00855b",
+            "on-secondary-fixed-variant": "#003ea8",
+            "tertiary-fixed": "#ffdad7",
+            "secondary-container": "#316bf3",
+            "on-tertiary": "#ffffff",
+            "surface-container": "#e9edff",
+            "on-tertiary-container": "#fffbff",
+            "error-container": "#ffdad6",
+            "outline-variant": "#bccac0",
+            "tertiary-container": "#bc5452",
+            "primary-fixed-dim": "#63dca6",
+            "surface-container-low": "#f1f3ff",
+            "on-surface": "#141b2b",
+            "on-tertiary-fixed": "#410005",
+            "primary-fixed": "#81f9c1",
+            "secondary": "#0051d5"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xl": "2rem",
+            "margin-mobile": "1rem",
+            "space-2xl": "3rem",
+            "margin": "2rem",
+            "space-xs": "0.25rem",
+            "space-sm": "0.5rem",
+            "space-md": "1rem",
+            "gutter-mobile": "0.75rem",
+            "space-lg": "1.5rem",
+            "gutter": "1.5rem"
+          },
+          "fontFamily": {
+            "display-hero": ["Plus Jakarta Sans"],
+            "headline-lg-mobile": ["Plus Jakarta Sans"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "headline-md": ["Plus Jakarta Sans"],
+            "label-md": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-lg": ["Plus Jakarta Sans"],
+            "label-lg": ["Inter"],
+            "body-md": ["Inter"],
+            "body-sm": ["Inter"],
+            "label-sm": ["Inter"],
+            "display-hero-mobile": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "display-hero": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+            "headline-lg-mobile": ["24px", { "lineHeight": "30px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "700" }],
+            "display-hero-mobile": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.015em", "fontWeight": "800" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased min-h-screen pb-36 flex flex-col items-center">
+<!-- Mobile Viewport Container Constraint -->
+<div class="w-full max-w-md mx-auto flex flex-col relative min-h-screen shadow-md bg-surface">
+<!-- TopBar (Linear Navigation Shell: Back + Checkout Journey) -->
+<header class="sticky top-0 z-40 bg-surface-container-lowest/90 backdrop-blur-md shadow-sm">
+<div class="flex items-center justify-between px-margin-mobile py-space-sm w-full">
+<button aria-label="Voltar" class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container transition-colors active:scale-95 text-on-surface">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<div class="flex flex-col items-center">
+<h1 class="font-headline-sm text-headline-sm text-on-surface tracking-tight">Carrinho &amp; Pagamento</h1>
+<span class="font-label-sm text-label-sm text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]" data-icon="lock" style="font-variation-settings: 'FILL' 1;">lock</span>
+            Checkout Criptografado
+          </span>
+</div>
+<button aria-label="Ajuda" class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container transition-colors active:scale-95 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+</div>
+<!-- Checkout Step Indicator -->
+<div class="px-margin-mobile pb-space-sm pt-space-xs">
+<div class="flex items-center justify-between relative">
+<!-- Step 1: Carrinho (Concluído) -->
+<div class="flex items-center gap-1.5 z-10">
+<div class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]" data-icon="check" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="font-label-md text-label-md text-primary font-semibold">1. Carrinho</span>
+</div>
+<div class="h-[2px] flex-1 bg-primary mx-2"></div>
+<!-- Step 2: Pagamento (Ativo) -->
+<div class="flex items-center gap-1.5 z-10">
+<div class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-sm text-label-sm ring-4 ring-primary-fixed/40">
+              2
+            </div>
+<span class="font-label-md text-label-md text-primary font-bold">2. Pagamento</span>
+</div>
+<div class="h-[2px] flex-1 bg-outline-variant/40 mx-2"></div>
+<!-- Step 3: Confirmação -->
+<div class="flex items-center gap-1.5 z-10">
+<div class="w-6 h-6 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center font-label-sm text-label-sm">
+              3
+            </div>
+<span class="font-label-md text-label-md text-on-surface-variant">3. Confirmação</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 px-margin-mobile py-space-md space-y-space-md">
+<!-- Section: Itens do Pedido -->
+<section class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm border border-outline-variant/30 space-y-space-sm">
+<div class="flex items-center justify-between pb-space-xs border-b border-outline-variant/20">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="shopping_basket" style="font-variation-settings: 'FILL' 1;">shopping_basket</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Itens do Pedido</h2>
+</div>
+<span class="font-label-md text-label-md bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full">2 produtos</span>
+</div>
+<!-- Product 1 Card -->
+<div class="flex gap-3 py-space-xs items-center">
+<div class="w-16 h-16 rounded-lg bg-surface-container-low p-1 flex-shrink-0 border border-outline-variant/30 flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-contain" data-alt="A modern packaging of Golden Retriever adult dog food bag set against a soft natural clinical background with clean studio light, pristine white accents, and subtle emerald green highlights in modern product photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFxLktbByp7JlZ0SSRWK1XVLb77zl3fyiF20mF8fCJSohx-sHv77vzVw-CT1bHGNcGNSzkC9SbzBQza5jWGUv4r03t6L-CannZWX49CMhKQcvOLaW-5oLu7TrhdS51rTcQJUfspmWDeddE_mem5Z5HKKcQJ9k68vemOPCBZaz1JnFYQdbX8MAVaIb4DeiZPI_PVw1SoB5QxsvBRRgoInA6erJtcFbYqwUY5J9HNZLj"/>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-sm text-body-md text-on-surface truncate">Ração Golden Retriever Adulto 15kg</h3>
+<div class="flex items-center gap-1.5 mt-0.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[13px] text-secondary" data-icon="storefront">storefront</span>
+<span class="font-body-sm text-body-sm truncate">Petz Jardins</span>
+</div>
+<div class="flex items-center justify-between mt-1">
+<span class="font-label-md text-label-md text-on-surface-variant">Qtd: 1 un</span>
+<span class="font-headline-sm text-headline-sm text-primary">R$ 311,90</span>
+</div>
+</div>
+</div>
+<div class="h-px bg-outline-variant/20 w-full"></div>
+<!-- Product 2 Card -->
+<div class="flex gap-3 py-space-xs items-center">
+<div class="w-16 h-16 rounded-lg bg-surface-container-low p-1 flex-shrink-0 border border-outline-variant/30 flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-contain" data-alt="A premium veterinary medication box of Bravecto antiparasitic chew for medium dogs photographed in high resolution against a clean, light-mode background with warm emerald tones and clinical reliability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwRekDY4Q4JhVldAVk4R8xV09cVRQxkoGsCmDuBKqVJ1QHjgrPEtOvg22ZCJnYpGMB2ufXBtYsfCTGnNNLlukdrlQSOHzZl62ps_EddLDui84dr8Kof8VjNIfE6pwCh0VRfg5ODSHrWbcp0coD3UW9aKr7E_xv1HwiTG0DGKdw_ltqXrzZgrrZTCXbUbTRv_ZrDWpwzZZaO-OTjvr9k6W-1UoXdHZ417wmPsRYDuMJ"/>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-sm text-body-md text-on-surface truncate">Antipulgas Bravecto Cães 10 a 20kg</h3>
+<div class="flex items-center gap-1.5 mt-0.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[13px] text-secondary" data-icon="storefront">storefront</span>
+<span class="font-body-sm text-body-sm truncate">Cobasi Express</span>
+</div>
+<div class="flex items-center justify-between mt-1">
+<span class="font-label-md text-label-md text-on-surface-variant">Qtd: 1 un</span>
+<span class="font-headline-sm text-headline-sm text-primary">R$ 187,85</span>
+</div>
+</div>
+</div>
+<!-- Cupom de Desconto -->
+<div class="pt-space-xs">
+<div class="flex items-center justify-between bg-primary-fixed/20 border border-primary/20 rounded-lg p-space-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="loyalty" style="font-variation-settings: 'FILL' 1;">loyalty</span>
+<div>
+<p class="font-label-md text-label-md text-primary font-bold tracking-wide">CUPOM APLICADO: MUNDOPET10</p>
+<p class="font-body-sm text-body-sm text-on-primary-fixed-variant">Desconto de R$ 49,97 ativado</p>
+</div>
+</div>
+<button aria-label="Remover cupom" class="text-primary hover:text-on-primary-fixed-variant transition-colors p-1">
+<span class="material-symbols-outlined text-[18px]" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Section: Endereço & Frete Expresso -->
+<section class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm border border-outline-variant/30 space-y-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" data-icon="location_on" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Endereço de Entrega</h2>
+</div>
+<button class="font-label-md text-label-md text-secondary hover:underline font-semibold">Alterar</button>
+</div>
+<div class="bg-surface-container-low rounded-lg p-space-sm flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]" data-icon="home" style="font-variation-settings: 'FILL' 1;">home</span>
+</div>
+<div class="flex-1">
+<p class="font-label-lg text-label-lg text-on-surface font-semibold">Av. Paulista, 1000 - Jardins</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">São Paulo - SP, Apto 82 • Próximo ao Metrô Trianon</p>
+</div>
+</div>
+<!-- Opção de Frete Ativa -->
+<div class="border-2 border-primary bg-primary-fixed/10 rounded-lg p-space-sm flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-7 h-7 rounded-full bg-primary text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]" data-icon="bolt" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-label-lg text-label-lg text-on-surface font-bold">Entrega Expressa Mundo Pet</span>
+<span class="bg-primary text-on-primary font-label-sm text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wider">45 min</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Envio prioritário por van parceira climatizada</p>
+</div>
+</div>
+<span class="font-label-lg text-label-lg text-primary font-bold">Grátis</span>
+</div>
+</section>
+<!-- Section: Live Tracking Card Preview -->
+<section class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm border border-outline-variant/30 space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary animate-pulse" data-icon="fmd_good" style="font-variation-settings: 'FILL' 1;">fmd_good</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Rastreamento do Pedido</h2>
+</div>
+<div class="flex items-center gap-1 bg-surface-container text-on-surface px-2 py-0.5 rounded-full">
+<span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">Ao Vivo</span>
+</div>
+</div>
+<!-- Simulated Map / Route Visualizer -->
+<div class="relative w-full h-28 rounded-lg overflow-hidden border border-outline-variant/40 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A clean modern minimalist GPS vector map view of urban city streets of Sao Paulo Paulista avenue in warm white and gentle mint green tones, showing a dynamic routing delivery trajectory with friendly delivery pin markers." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDuU3e4ss7R45sqiAlsAx_NHguREsNSrsgmcqoJ9vJjYRc8f5zZUxbmNNlopkTEEpj8lfKSnA98iA8QHi8DlxatBWMgIubOvDXrpJmoAIb8biThXhTW_DEIaZzQMnHZ07R-EPTRmtk3MIZtddy-fFPvk3jWjoQg8KzAUJn6LwtDwDcxL0mqWblYNSVXseCC7VfOJdu1RDIqBtvEI5exk6Ms6bMqaqsMXcCaHH011nwg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-on-surface/50 via-transparent to-transparent"></div>
+<div class="absolute bottom-2 left-3 right-3 flex items-center justify-between text-on-primary bg-inverse-surface/85 backdrop-blur-md rounded-lg px-2.5 py-1.5 shadow">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-fixed" data-icon="electric_moped">electric_moped</span>
+<span class="font-label-md text-label-md">Pet Entregador: Carlos S.</span>
+</div>
+<span class="font-label-sm text-label-sm bg-primary-container px-2 py-0.5 rounded-full font-bold">Chegando em 25 min</span>
+</div>
+</div>
+<!-- Progress Tracker Step Sequence -->
+<div class="pt-1">
+<div class="grid grid-cols-3 gap-2 text-center relative">
+<!-- Progress Line -->
+<div class="absolute top-3 left-1/6 right-1/6 h-0.5 bg-primary -z-0"></div>
+<div class="flex flex-col items-center relative z-10">
+<div class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-[12px] shadow-sm">
+<span class="material-symbols-outlined text-[14px]" data-icon="store" style="font-variation-settings: 'FILL' 1;">store</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold mt-1">Loja</span>
+<span class="font-body-sm text-[10px] text-primary">Pronto</span>
+</div>
+<div class="flex flex-col items-center relative z-10">
+<div class="w-6 h-6 rounded-full bg-primary text-on-primary ring-4 ring-primary-fixed/50 flex items-center justify-center text-[12px] shadow-sm">
+<span class="material-symbols-outlined text-[14px]" data-icon="local_shipping" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-bold mt-1">Em Trânsito</span>
+<span class="font-body-sm text-[10px] text-primary font-bold">A caminho</span>
+</div>
+<div class="flex flex-col items-center relative z-10">
+<div class="w-6 h-6 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center text-[12px]">
+<span class="material-symbols-outlined text-[14px]" data-icon="pets">pets</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-1">Entrega</span>
+<span class="font-body-sm text-[10px] text-on-surface-variant">Prev. 25 min</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: Forma de Pagamento -->
+<section class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm border border-outline-variant/30 space-y-space-sm">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="payments" style="font-variation-settings: 'FILL' 1;">payments</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Forma de Pagamento</h2>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-semibold">100% Protegido</span>
+</div>
+<!-- Payment Options Grid -->
+<div class="space-y-2.5">
+<!-- Option 1: Pix (Selected) -->
+<label class="flex items-center justify-between p-3 rounded-xl border-2 border-primary bg-primary-fixed/10 cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<div class="w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center bg-primary">
+<div class="w-2 h-2 rounded-full bg-on-primary"></div>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-label-lg text-label-lg text-on-surface font-bold">Pix</span>
+<span class="bg-primary text-on-primary font-label-sm text-[10px] px-1.5 py-0.5 rounded-full font-bold">+5% Cashback</span>
+</div>
+<p class="font-body-sm text-body-sm text-primary font-medium">Aprovação imediata e sem taxas</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary text-[22px]" data-icon="qr_code_2">qr_code_2</span>
+</label>
+<!-- Option 2: Cartão de Crédito -->
+<label class="flex items-center justify-between p-3 rounded-xl border border-outline-variant/40 bg-surface-container-lowest hover:bg-surface-container-low cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<div class="w-5 h-5 rounded-full border-2 border-outline flex items-center justify-center">
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-label-lg text-label-lg text-on-surface font-semibold">Cartão de Crédito</span>
+<span class="text-on-surface-variant font-label-sm text-[11px]">Mastercard •••• 4892</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Em até 3x sem juros de R$ 149,92</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[22px]" data-icon="credit_card">credit_card</span>
+</label>
+<!-- Option 3: Débito / Carteira Mundo Pet -->
+<label class="flex items-center justify-between p-3 rounded-xl border border-outline-variant/40 bg-surface-container-lowest hover:bg-surface-container-low cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<div class="w-5 h-5 rounded-full border-2 border-outline flex items-center justify-center">
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-label-lg text-label-lg text-on-surface font-semibold">Cartão de Débito / Carteira</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Saldo Carteira: R$ 52,00 disponível</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[22px]" data-icon="account_balance_wallet">account_balance_wallet</span>
+</label>
+</div>
+</section>
+<!-- Section: Resumo Financeiro -->
+<section class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm border border-outline-variant/30 space-y-2.5">
+<h2 class="font-headline-sm text-headline-sm text-on-surface pb-1 border-b border-outline-variant/20">Resumo Financeiro</h2>
+<div class="space-y-1.5 text-body-md">
+<div class="flex justify-between items-center text-on-surface-variant">
+<span class="font-body-md text-body-md">Subtotal dos produtos</span>
+<span class="font-body-md text-body-md font-medium text-on-surface">R$ 499,75</span>
+</div>
+<div class="flex justify-between items-center text-primary">
+<span class="font-body-md text-body-md flex items-center gap-1">
+              Desconto Cupom (MUNDOPET10)
+            </span>
+<span class="font-body-md text-body-md font-bold">- R$ 49,97</span>
+</div>
+<div class="flex justify-between items-center text-on-surface-variant">
+<span class="font-body-md text-body-md">Frete Expresso (45 min)</span>
+<span class="font-label-md text-label-md text-primary font-bold">Grátis</span>
+</div>
+</div>
+<div class="pt-2 border-t border-outline-variant/30 flex justify-between items-baseline">
+<div>
+<span class="font-headline-md text-headline-md text-on-surface font-bold">Total</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">ou até 3x de R$ 149,92 sem juros</p>
+</div>
+<div class="text-right">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-primary font-extrabold">R$ 449,78</span>
+</div>
+</div>
+</section>
+<!-- Reassurance Security Badge -->
+<div class="flex items-center justify-center gap-3 py-2 text-on-surface-variant">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="verified_user" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span class="font-label-sm text-label-sm">Compra Segura</span>
+</div>
+<span>•</span>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-secondary" data-icon="published_with_changes">published_with_changes</span>
+<span class="font-label-sm text-label-sm">Garantia Pet Feliz</span>
+</div>
+</div>
+</main>
+<!-- Floating / Docked Bottom Checkout Action Bar -->
+<footer class="fixed bottom-0 left-0 w-full z-50 bg-surface-container-lowest/95 backdrop-blur-md shadow-[0px_-4px_16px_rgba(17,24,39,0.08)]">
+<div class="max-w-md mx-auto px-margin-mobile py-space-sm space-y-2">
+<!-- CTA Action Button -->
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary py-3 px-4 rounded-xl font-headline-sm text-headline-sm flex items-center justify-between shadow-md active:scale-95 transition-all">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]" data-icon="lock" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span>Finalizar Pedido com Pix</span>
+</div>
+<span class="font-headline-sm font-bold bg-white/20 px-2.5 py-1 rounded-lg">R$ 449,78</span>
+</button>
+<!-- Terms Footnote -->
+<p class="text-center font-body-sm text-[11px] text-on-surface-variant">
+          Ao prosseguir você concorda com os termos de serviço Mundo Pet.
+        </p>
+</div>
+</footer>
+</div>
+<style>#mp-switch{position:fixed;z-index:99999;bottom:16px;right:16px;background:#0e6759;color:white;padding:10px 14px;border-radius:16px;box-shadow:0 5px 18px #0004;font:600 14px system-ui;max-height:76vh;overflow:auto}#mp-switch summary{cursor:pointer;list-style:auto}#mp-switch nav{display:flex;flex-direction:column;gap:7px;padding-top:9px}#mp-switch a{color:white!important;text-decoration:none;padding:6px 8px;border:1px solid #fff5;border-radius:7px;white-space:nowrap}#mp-switch a:hover{background:#fff3}</style><details id="mp-switch"><summary>Telas do Mundo Pet</summary><nav><a href="/mundo_pet_tela_principal/">Home</a><a href="/mundo_pet_cadastro_de_tutor_pets/">Tutor e Pets</a><a href="/mundo_pet_agendamento_de_servi_os/">Agendamentos</a><a href="/mundo_pet_carrinho_checkout_rastreio/">Carrinho e Pedidos</a><a href="/mundo_pet_painel_do_pet_shop_lojista/">Pet Shop</a><a href="/mundo_pet_painel_do_veterin_rio_agenda/">Veterinário</a><a href="/mundo_pet_painel_do_entregador_corridas/">Entregador</a><a href="/mundo_pet_painel_administrativo_geral/">Administração</a></nav></details></body></html>

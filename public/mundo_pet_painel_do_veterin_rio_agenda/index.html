@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mundo Pet - Painel do Veterinário</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Plus Jakarta Sans & Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration matching the provided Token Set -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-container": "#316bf3",
+            "on-secondary-container": "#fefcff",
+            "on-secondary-fixed": "#00174b",
+            "on-secondary": "#ffffff",
+            "error": "#ba1a1a",
+            "secondary": "#0051d5",
+            "primary-fixed": "#81f9c1",
+            "primary-fixed-dim": "#63dca6",
+            "on-error": "#ffffff",
+            "inverse-on-surface": "#edf0ff",
+            "on-error-container": "#93000a",
+            "surface": "#f9f9ff",
+            "on-tertiary": "#ffffff",
+            "on-primary": "#ffffff",
+            "surface-container": "#e9edff",
+            "primary-container": "#00855b",
+            "tertiary": "#9c3c3b",
+            "tertiary-fixed": "#ffdad7",
+            "tertiary-fixed-dim": "#ffb3af",
+            "on-background": "#141b2b",
+            "on-primary-fixed-variant": "#005236",
+            "inverse-primary": "#63dca6",
+            "surface-container-high": "#e1e8fd",
+            "on-secondary-fixed-variant": "#003ea8",
+            "background": "#f9f9ff",
+            "inverse-surface": "#293040",
+            "on-tertiary-fixed-variant": "#802728",
+            "on-surface-variant": "#3d4a42",
+            "on-tertiary-fixed": "#410005",
+            "surface-container-lowest": "#ffffff",
+            "error-container": "#ffdad6",
+            "outline-variant": "#bccac0",
+            "surface-container-highest": "#dce2f7",
+            "surface-dim": "#d3daef",
+            "on-primary-container": "#f5fff6",
+            "secondary-fixed": "#dbe1ff",
+            "surface-bright": "#f9f9ff",
+            "on-surface": "#141b2b",
+            "surface-tint": "#006c49",
+            "outline": "#6d7a71",
+            "primary": "#006947",
+            "tertiary-container": "#bc5452",
+            "secondary-fixed-dim": "#b4c5ff",
+            "on-primary-fixed": "#002113",
+            "surface-variant": "#dce2f7",
+            "surface-container-low": "#f1f3ff",
+            "on-tertiary-container": "#fffbff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-xl": "2rem",
+            "space-md": "1rem",
+            "gutter": "1.5rem",
+            "space-xs": "0.25rem",
+            "margin": "2rem",
+            "gutter-mobile": "0.75rem",
+            "margin-mobile": "1rem",
+            "space-2xl": "3rem"
+          },
+          "fontFamily": {
+            "headline-sm": ["Plus Jakarta Sans", "sans-serif"],
+            "body-md": ["Inter", "sans-serif"],
+            "label-sm": ["Inter", "sans-serif"],
+            "display-hero": ["Plus Jakarta Sans", "sans-serif"],
+            "label-lg": ["Inter", "sans-serif"],
+            "display-hero-mobile": ["Plus Jakarta Sans", "sans-serif"],
+            "body-lg": ["Inter", "sans-serif"],
+            "label-md": ["Inter", "sans-serif"],
+            "headline-md": ["Plus Jakarta Sans", "sans-serif"],
+            "body-sm": ["Inter", "sans-serif"],
+            "headline-lg-mobile": ["Plus Jakarta Sans", "sans-serif"],
+            "headline-lg": ["Plus Jakarta Sans", "sans-serif"]
+          },
+          "fontSize": {
+            "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "700" }],
+            "display-hero": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "display-hero-mobile": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.015em", "fontWeight": "800" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+            "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "headline-lg-mobile": ["24px", { "lineHeight": "30px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    /* Custom subtle scrollbar hiding for horizontal tabs */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased font-body-md selection:bg-primary-fixed selection:text-on-primary-fixed min-h-screen pb-24">
+<div class="max-w-md mx-auto min-h-screen flex flex-col relative bg-background shadow-2xl">
+<!-- TOP APP BAR / BRAND HEADER -->
+<header class="bg-surface-container-lowest/90 backdrop-blur-md docked full-width top-0 sticky z-40 shadow-sm border-b border-outline-variant/30 px-margin-mobile py-space-sm flex items-center justify-between">
+<div class="flex items-center space-x-2">
+<div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary shadow-sm">
+<span class="material-symbols-outlined text-lg">pets</span>
+</div>
+<div>
+<span class="text-headline-sm font-headline-sm text-primary tracking-tight block leading-tight">Mundo Pet</span>
+<span class="text-label-sm font-label-sm text-secondary font-bold tracking-wider">PAINEL VET</span>
+</div>
+</div>
+<!-- Right Quick Actions (Notifications & Fast Alert) -->
+<div class="flex items-center space-x-2">
+<button aria-label="Notificações" class="w-9 h-9 rounded-full bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-on-surface-variant transition-colors relative">
+<span class="material-symbols-outlined text-xl">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-secondary ring-2 ring-surface-container-lowest"></span>
+</button>
+<button aria-label="Suporte Clínico" class="w-9 h-9 rounded-full bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-xl">help_outline</span>
+</button>
+</div>
+</header>
+<!-- MAIN SCROLLABLE CONTENT -->
+<main class="flex-1 px-margin-mobile pt-space-md space-y-space-lg">
+<!-- DOCTOR PROFILE HERO CARD -->
+<section class="bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/30 shadow-[0px_2px_8px_-1px_rgba(17,24,39,0.04)]">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-center space-x-3">
+<div class="relative">
+<img class="w-14 h-14 rounded-full object-cover ring-2 ring-primary/20 shadow-sm" data-alt="Close-up professional portrait of a Brazilian female veterinarian in modern medical scrubs with a stethoscope around her neck smiling reassuringly in a clean clinical setting with bright natural illumination and an emerald green background accent." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkSg1lDLPOM2YksmrQN_AROOxv3T4r-z32FzyLtvCdDLeXAXXVgyPn_FicAjZJcxs7H0gZG-g-BqjcMePnNdqnp23oV272fiP4g8xjHlJ3rKPPIIRniW142RiUxoayfJFEa16qqzeAb6J5adKrvvpb2EFEM1SWEPf1rOeyF9C_JAmnVBfpoghmcCLumD_yMnabfgYMplAcEPwtDmHEavQsw7beLG4W1t9f_rxcrTCT"/>
+<div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center ring-2 ring-surface-container-lowest text-on-primary">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+</div>
+<div>
+<div class="flex items-center space-x-1.5">
+<h1 class="text-headline-sm font-headline-sm text-on-surface font-bold leading-tight">Dra. Camila Santos</h1>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">CRMV-SP 38.412 • Clínica &amp; Cirurgia</p>
+<!-- Verified Badge -->
+<div class="inline-flex items-center space-x-1 px-2 py-0.5 mt-1 rounded-full bg-primary-fixed/40 text-on-primary-fixed-variant text-label-sm font-label-sm">
+<span class="material-symbols-outlined text-xs">shield_with_heart</span>
+<span>CRMV Ativo &amp; Verificado</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Toggle Switch: Disponibilidade -->
+<div class="mt-4 pt-3 border-t border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center space-x-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
+<div>
+<p class="text-label-md font-label-md text-on-surface">Disponível para Consultas</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-xs">Online / Presencial no VetCare</p>
+</div>
+</div>
+<!-- Interactive Toggle UI -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" id="availability-toggle" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:border-outline-variant after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</section>
+<!-- TOP KPI CARDS (Bento Grid) -->
+<section class="grid grid-cols-2 gap-3">
+<!-- KPI 1: Atendimentos Hoje -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant/30 shadow-[0px_2px_8px_-1px_rgba(17,24,39,0.04)] flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between text-primary mb-1">
+<span class="material-symbols-outlined text-xl">event_available</span>
+<span class="text-label-sm font-label-sm px-1.5 py-0.5 rounded bg-primary-fixed/40 text-on-primary-fixed-variant">Hoje</span>
+</div>
+<p class="text-label-md font-label-md text-on-surface-variant">Atendimentos</p>
+<h3 class="text-headline-md font-headline-md text-on-surface font-bold mt-0.5">6 agendados</h3>
+</div>
+<div class="mt-2 text-[10px] text-on-surface-variant leading-tight border-t border-outline-variant/20 pt-1.5">
+<span class="font-semibold text-secondary">3</span> clínica • <span class="font-semibold text-primary">2</span> domicílio • <span class="font-semibold text-tertiary">1</span> tele
+          </div>
+</div>
+<!-- KPI 2: Próximo Paciente -->
+<div class="bg-surface-container-low p-space-md rounded-xl border border-secondary/20 shadow-[0px_2px_8px_-1px_rgba(17,24,39,0.04)] flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between text-secondary mb-1">
+<span class="material-symbols-outlined text-xl">alarm</span>
+<span class="w-2 h-2 rounded-full bg-secondary animate-ping"></span>
+</div>
+<p class="text-label-md font-label-md text-on-surface-variant">Próximo Paciente</p>
+<h3 class="text-headline-md font-headline-md text-secondary font-bold mt-0.5">Em 25 min</h3>
+</div>
+<p class="mt-2 text-[11px] font-medium text-on-surface text-ellipsis overflow-hidden whitespace-nowrap">
+            Thor (Golden) • 10:30
+          </p>
+</div>
+<!-- KPI 3: Ganhos do Mês -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant/30 shadow-[0px_2px_8px_-1px_rgba(17,24,39,0.04)]">
+<div class="flex items-center justify-between text-primary mb-1">
+<span class="material-symbols-outlined text-xl">payments</span>
+<span class="text-label-sm font-label-sm text-primary font-bold">+18%</span>
+</div>
+<p class="text-label-md font-label-md text-on-surface-variant">Ganhos do Mês</p>
+<h3 class="text-headline-md font-headline-md text-on-surface font-bold mt-0.5">R$ 7.840,00</h3>
+<p class="text-[10px] text-on-surface-variant mt-1">Repasse líquido previsto</p>
+</div>
+<!-- KPI 4: Avaliação Média -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant/30 shadow-[0px_2px_8px_-1px_rgba(17,24,39,0.04)]">
+<div class="flex items-center justify-between text-amber-500 mb-1">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-label-sm font-label-sm px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 font-bold">Top Vet</span>
+</div>
+<p class="text-label-md font-label-md text-on-surface-variant">Avaliação Média</p>
+<h3 class="text-headline-md font-headline-md text-on-surface font-bold mt-0.5">4.9 ★</h3>
+<p class="text-[10px] text-on-surface-variant mt-1">(342 avaliações reais)</p>
+</div>
+</section>
+<!-- AGENDA DO DIA COM FILTROS -->
+<section class="space-y-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-primary text-xl">calendar_month</span>
+<h2 class="text-headline-sm font-headline-sm text-on-surface font-bold">Agenda do Dia</h2>
+</div>
+<span class="text-label-sm font-label-sm text-primary font-semibold">18 Março, 2025</span>
+</div>
+<!-- Seletor de Data Horizontal & Abas -->
+<div class="flex items-center space-x-2 overflow-x-auto no-scrollbar py-1">
+<button class="px-4 py-2 rounded-full bg-primary text-on-primary text-label-md font-label-md shadow-sm whitespace-nowrap transition-transform active:scale-95 flex items-center space-x-1">
+<span>Hoje (18 Mar)</span>
+<span class="w-1.5 h-1.5 rounded-full bg-on-primary ml-1"></span>
+</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-lowest border border-outline-variant/40 text-on-surface-variant hover:text-on-surface text-label-md font-label-md whitespace-nowrap transition-colors">
+            Amanhã (19 Mar)
+          </button>
+<button class="px-4 py-2 rounded-full bg-surface-container-lowest border border-outline-variant/40 text-on-surface-variant hover:text-on-surface text-label-md font-label-md whitespace-nowrap transition-colors">
+            Semana
+          </button>
+<button class="w-9 h-9 flex-shrink-0 rounded-full bg-surface-container-lowest border border-outline-variant/40 flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-lg">tune</span>
+</button>
+</div>
+<!-- TIMELINE DE CONSULTAS -->
+<div class="space-y-3">
+<!-- CARD 1: THOR (Próximo Paciente - Na Clínica) -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md border-2 border-primary/30 shadow-[0px_4px_12px_rgba(0,105,71,0.08)] relative overflow-hidden">
+<!-- Left status bar accent -->
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary"></div>
+<div class="flex items-start justify-between pl-1">
+<div class="flex items-center space-x-2">
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary text-label-sm font-label-sm">
+                  10:30
+                </span>
+<span class="px-2 py-0.5 rounded-full bg-primary-fixed/40 text-on-primary-fixed-variant text-label-sm font-label-sm font-bold flex items-center space-x-1">
+<span class="material-symbols-outlined text-xs">local_hospital</span>
+<span>Na Clínica</span>
+</span>
+</div>
+<span class="text-label-sm font-label-sm text-primary font-bold animate-pulse">EM 25 MIN</span>
+</div>
+<!-- Pet & Tutor Info -->
+<div class="flex items-center space-x-3 mt-3 pl-1">
+<img class="w-12 h-12 rounded-xl object-cover border border-outline-variant/30" data-alt="A portrait of a cheerful adult Golden Retriever dog sitting attentively looking forward in a bright clean veterinary consultation clinic with soft daylight and emerald and white interior." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHtM84sHC2PwgcYnVznIqjOGwOPggEDNDTMHbz6TVc_fdPoOvwnvXSD-BHk1nF0y7iepZf0Wfr-9d90GuQ2CVXify6QlawPsQv5nppgH6WujNzQwl0Yqh99y74Ld_pFkJsGh47aMlSkMUGTTWA8N4_CdWJtdS6Ah-YI4OR2VNgfGUrBr8HJgutkdewKxtna7SCqFZeV4A3iYqnzcDE7jq8mD0SwWVThcYzj45_MeMI"/>
+<div>
+<h4 class="text-headline-sm font-headline-sm text-on-surface font-bold leading-snug">
+                  Thor <span class="text-body-sm font-body-sm font-normal text-on-surface-variant">• Cão (Golden Retriever, 32kg)</span>
+</h4>
+<p class="text-body-sm font-body-sm text-on-surface-variant flex items-center space-x-1">
+<span class="material-symbols-outlined text-xs">person</span>
+<span>Tutor: Mariana Silva</span>
+</p>
+</div>
+</div>
+<!-- Clinical Purpose & Location -->
+<div class="mt-3 pl-1 py-2 px-3 bg-surface-container-low rounded-lg text-body-sm font-body-sm text-on-surface">
+<div class="flex items-center text-on-surface font-medium space-x-1">
+<span class="material-symbols-outlined text-sm text-primary">medical_services</span>
+<span>Motivo: Consulta Geral + Vacina V10 Polivalente</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-0.5">Local: VetCare Jardins - Consultório 02</p>
+</div>
+<!-- Card Actions -->
+<div class="mt-3 pl-1 grid grid-cols-2 gap-2">
+<button class="py-2.5 px-3 rounded-lg bg-primary hover:bg-primary-container text-on-primary text-label-md font-label-md font-bold flex items-center justify-center space-x-1.5 shadow-sm transition-transform active:scale-95">
+<span class="material-symbols-outlined text-base">clinical_notes</span>
+<span>Abrir Prontuário</span>
+</button>
+<button class="py-2.5 px-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface text-label-md font-label-md flex items-center justify-center space-x-1 transition-colors">
+<span class="material-symbols-outlined text-base">history</span>
+<span>Histórico do Pet</span>
+</button>
+</div>
+</div>
+<!-- CARD 2: LUNA (Domicílio) -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/30 shadow-[0px_2px_8px_-1px_rgba(17,24,39,0.04)] relative">
+<div class="flex items-start justify-between">
+<div class="flex items-center space-x-2">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-semibold text-label-sm font-label-sm">
+                  14:00
+                </span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant text-label-sm font-label-sm font-bold flex items-center space-x-1">
+<span class="material-symbols-outlined text-xs">home</span>
+<span>Domicílio (+ Táxi Dog)</span>
+</span>
+</div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Confirmado</span>
+</div>
+<!-- Pet & Tutor Info -->
+<div class="flex items-center space-x-3 mt-3">
+<img class="w-12 h-12 rounded-xl object-cover border border-outline-variant/30" data-alt="Close-up portrait of an elegant Siamese cat with striking blue eyes resting comfortably on a soft light-colored blanket in a bright and cozy indoor setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAp4IugdTR73sEazp1K_soblrgtbvURJgvWomPF9R-O9azFzISmZ9WiugOk6bpAWTGwuwJ4rhBZl15M9g0qNMAJumOWzCixzWp-nsz5ldram04h9zpe-mj08K1i457bXSTeSe2l7RyXVnblJYf1YRP9bkcU1I7QvaHUiioIyQywG8NAfGntI1u5ggaND6bg1ZByS6IpDceADjzFYzTCndSOQ1RTHJicNG2Umy8UWKRA"/>
+<div>
+<h4 class="text-headline-sm font-headline-sm text-on-surface font-bold leading-snug">
+                  Luna <span class="text-body-sm font-body-sm font-normal text-on-surface-variant">• Gato (Siamês, 4.2kg)</span>
+</h4>
+<p class="text-body-sm font-body-sm text-on-surface-variant flex items-center space-x-1">
+<span class="material-symbols-outlined text-xs">person</span>
+<span>Tutor: Rodrigo Lima</span>
+</p>
+</div>
+</div>
+<!-- Address and Route -->
+<div class="mt-3 p-2.5 bg-surface-container-low rounded-lg flex items-center justify-between text-body-sm font-body-sm">
+<div class="flex items-start space-x-2 text-on-surface">
+<span class="material-symbols-outlined text-secondary text-base mt-0.5" data-location="São Paulo">location_on</span>
+<div>
+<p class="text-xs font-semibold leading-tight">Rua Bela Cintra, 450 - Apto 82</p>
+<p class="text-[11px] text-on-surface-variant">Consolação • 2.4 km de distância</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary text-sm">directions_car</span>
+</div>
+<!-- Actions -->
+<div class="mt-3 grid grid-cols-2 gap-2">
+<button class="py-2 px-3 rounded-lg bg-surface-container-high text-secondary hover:bg-secondary-fixed text-label-md font-label-md flex items-center justify-center space-x-1 transition-colors">
+<span class="material-symbols-outlined text-base">map</span>
+<span>Ver Rota</span>
+</button>
+<button class="py-2 px-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface text-label-md font-label-md flex items-center justify-center space-x-1 transition-colors">
+<span class="material-symbols-outlined text-base">chat</span>
+<span>Chat com Tutor</span>
+</button>
+</div>
+</div>
+<!-- CARD 3: BOB (Teleorientação Preventiva) -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/30 shadow-[0px_2px_8px_-1px_rgba(17,24,39,0.04)] relative">
+<div class="flex items-start justify-between">
+<div class="flex items-center space-x-2">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-semibold text-label-sm font-label-sm">
+                  16:30
+                </span>
+<span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-label-sm font-label-sm font-bold flex items-center space-x-1">
+<span class="material-symbols-outlined text-xs">videocam</span>
+<span>Teleorientação</span>
+</span>
+</div>
+<span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-medium">CFMV 1465/22</span>
+</div>
+<!-- Pet & Tutor Info -->
+<div class="flex items-center space-x-3 mt-3">
+<img class="w-12 h-12 rounded-xl object-cover border border-outline-variant/30" data-alt="A small charming French Bulldog fawn color looking curiously at the camera indoors on a clean minimalist wooden floor with soft ambient room lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHpICpCwvW3rQyBQTX3kJr_b9-tg2iR24Ryy9TAEtpTZLTCLec5yp73hUuMVPCQdyXxYLB8M9u--0NHDjOxx3BeZvvhEzKSzDOlU808D5YPphx5t85XBFgoxwg-Y3GiY4KbvyZnwS0Z6iRosq5V23efJFBFe39O8iofhT1NMqeZ2N7yJESF_prLhgczDmaW-5kNBXJz9JUm8s-xjbBFwZxSBM007Sn2iKQ2ulQGpRy"/>
+<div>
+<h4 class="text-headline-sm font-headline-sm text-on-surface font-bold leading-snug">
+                  Bob <span class="text-body-sm font-body-sm font-normal text-on-surface-variant">• Cão (Bulldog Francês, 9.8kg)</span>
+</h4>
+<p class="text-body-sm font-body-sm text-on-surface-variant flex items-center space-x-1">
+<span class="material-symbols-outlined text-xs">person</span>
+<span>Tutora: Ana Costa</span>
+</p>
+</div>
+</div>
+<!-- Purpose -->
+<p class="mt-2 text-xs text-on-surface-variant">
+<span class="font-semibold text-on-surface">Motivo:</span> Acompanhamento pós-dermatite e revisão nutricional.
+            </p>
+<!-- Video Conference CTA Button -->
+<button class="mt-3 w-full py-2.5 px-3 rounded-lg bg-secondary hover:bg-secondary-container text-on-secondary text-label-md font-label-md font-bold flex items-center justify-center space-x-2 shadow-sm transition-transform active:scale-95">
+<span class="material-symbols-outlined text-base">video_call</span>
+<span>Acessar Sala Virtual Criptografada</span>
+</button>
+</div>
+</div>
+</section>
+<!-- FERRAMENTAS RÁPIDAS DO ESPECIALISTA (Bento Grid Layout) -->
+<section class="space-y-space-sm">
+<div class="flex items-center justify-between">
+<h2 class="text-headline-sm font-headline-sm text-on-surface font-bold flex items-center space-x-1.5">
+<span class="material-symbols-outlined text-primary">bolt</span>
+<span>Ferramentas Rápidas</span>
+</h2>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Atalhos Clínicos</span>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<!-- Tool 1: Receita Digital -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant/30 hover:border-primary/40 transition-all cursor-pointer shadow-sm flex flex-col justify-between group">
+<div class="w-10 h-10 rounded-lg bg-primary-fixed/40 text-primary flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-xl">prescriptions</span>
+</div>
+<div>
+<h4 class="text-headline-sm font-headline-sm text-on-surface text-sm font-bold leading-tight">Emitir Receita Digital</h4>
+<p class="text-[11px] text-on-surface-variant mt-1 leading-snug">Assinatura ICP-Brasil &amp; envio SMS ao tutor</p>
+</div>
+<div class="mt-3 flex items-center text-primary text-label-sm font-label-sm">
+<span>Nova prescrição</span>
+<span class="material-symbols-outlined text-xs ml-0.5">arrow_forward</span>
+</div>
+</div>
+<!-- Tool 2: Prontuários & Laudos -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant/30 hover:border-primary/40 transition-all cursor-pointer shadow-sm flex flex-col justify-between group">
+<div class="w-10 h-10 rounded-lg bg-surface-container text-secondary flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-xl">folder_shared</span>
+</div>
+<div>
+<h4 class="text-headline-sm font-headline-sm text-on-surface text-sm font-bold leading-tight">Prontuários Recentes</h4>
+<p class="text-[11px] text-on-surface-variant mt-1 leading-snug">Acesso a 1.280 fichas de pacientes</p>
+</div>
+<div class="mt-3 flex items-center text-secondary text-label-sm font-label-sm">
+<span>Buscar ficha</span>
+<span class="material-symbols-outlined text-xs ml-0.5">arrow_forward</span>
+</div>
+</div>
+<!-- Tool 3: Configurar Horários e Valores -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant/30 hover:border-primary/40 transition-all cursor-pointer shadow-sm flex flex-col justify-between group">
+<div class="w-10 h-10 rounded-lg bg-surface-container-low text-on-surface-variant flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-xl">tune</span>
+</div>
+<div>
+<h4 class="text-headline-sm font-headline-sm text-on-surface text-sm font-bold leading-tight">Horários &amp; Valores</h4>
+<p class="text-[11px] text-on-surface-variant mt-1 leading-snug">Definir plantões clínicos e tabela de consultas</p>
+</div>
+<div class="mt-3 flex items-center text-on-surface text-label-sm font-label-sm">
+<span>Gerenciar</span>
+<span class="material-symbols-outlined text-xs ml-0.5">arrow_forward</span>
+</div>
+</div>
+<!-- Tool 4: Laudos & Vacinas -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant/30 hover:border-primary/40 transition-all cursor-pointer shadow-sm flex flex-col justify-between group">
+<div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-xl">vaccines</span>
+</div>
+<div>
+<h4 class="text-headline-sm font-headline-sm text-on-surface text-sm font-bold leading-tight">Exames &amp; Vacinas</h4>
+<p class="text-[11px] text-on-surface-variant mt-1 leading-snug">Validação de lotes, datas e sorologia</p>
+</div>
+<div class="mt-3 flex items-center text-amber-800 text-label-sm font-label-sm">
+<span>Registrar lote</span>
+<span class="material-symbols-outlined text-xs ml-0.5">arrow_forward</span>
+</div>
+</div>
+</div>
+</section>
+<!-- AVISO REGULATÓRIO CFMV -->
+<section class="bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-sm">
+<div class="flex items-start space-x-3">
+<span class="material-symbols-outlined text-secondary text-xl mt-0.5">policy</span>
+<div>
+<h5 class="text-label-md font-label-md text-on-surface font-bold">Normativas e Ética CFMV</h5>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-xs mt-1 leading-relaxed">
+              Teleorientação em estrita conformidade com a <strong>Resolução CFMV nº 1465/2022</strong>. Casos de urgência e emergência devem ser imediatamente direcionados ao pronto-socorro presencial 24h.
+            </p>
+<div class="mt-2 flex items-center space-x-3 text-[11px] text-secondary font-semibold">
+<a class="hover:underline flex items-center space-x-0.5" href="#">
+<span>Ler Resolução na íntegra</span>
+<span class="material-symbols-outlined text-xs">open_in_new</span>
+</a>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- PARTNER BOTTOM NAVIGATION BAR -->
+<!-- Mapped directly to Shared Components JSON specifications -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter-mobile py-space-xs max-w-md mx-auto bg-surface-container-lowest dark:bg-inverse-surface border-t border-outline-variant/30 shadow-[0px_-2px_10px_rgba(17,24,39,0.05)]">
+<!-- Tab 1: Agenda (Active) -->
+<button aria-label="Agenda" class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed font-bold py-space-xs active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+<span class="text-label-sm font-label-sm mt-0.5">Agenda</span>
+</button>
+<!-- Tab 2: Pacientes/Prontuário -->
+<button aria-label="Pacientes/Prontuário" class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant py-space-xs hover:text-primary active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined text-2xl">folder_shared</span>
+<span class="text-label-sm font-label-sm mt-0.5">Pacientes</span>
+</button>
+<!-- Tab 3: Prescrições -->
+<button aria-label="Prescrições" class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant py-space-xs hover:text-primary active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined text-2xl">prescriptions</span>
+<span class="text-label-sm font-label-sm mt-0.5">Prescrições</span>
+</button>
+<!-- Tab 4: Repasses -->
+<button aria-label="Repasses" class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant py-space-xs hover:text-primary active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
+<span class="text-label-sm font-label-sm mt-0.5">Repasses</span>
+</button>
+<!-- Tab 5: Perfil Profissional -->
+<button aria-label="Perfil Profissional" class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant py-space-xs hover:text-primary active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined text-2xl">person</span>
+<span class="text-label-sm font-label-sm mt-0.5">Perfil</span>
+</button>
+</nav>
+</div>
+<!-- Inline micro-interaction script -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggle = document.getElementById('availability-toggle');
+      if (toggle) {
+        toggle.addEventListener('change', (e) => {
+          const statusText = e.target.closest('div').previousElementSibling.querySelector('p:last-child');
+          if (statusText) {
+            statusText.textContent = e.target.checked ? 'Online / Presencial no VetCare' : 'Indisponível no momento';
+          }
+        });
+      }
+    });
+  </script>
+<style>#mp-switch{position:fixed;z-index:99999;bottom:16px;right:16px;background:#0e6759;color:white;padding:10px 14px;border-radius:16px;box-shadow:0 5px 18px #0004;font:600 14px system-ui;max-height:76vh;overflow:auto}#mp-switch summary{cursor:pointer;list-style:auto}#mp-switch nav{display:flex;flex-direction:column;gap:7px;padding-top:9px}#mp-switch a{color:white!important;text-decoration:none;padding:6px 8px;border:1px solid #fff5;border-radius:7px;white-space:nowrap}#mp-switch a:hover{background:#fff3}</style><details id="mp-switch"><summary>Telas do Mundo Pet</summary><nav><a href="/mundo_pet_tela_principal/">Home</a><a href="/mundo_pet_cadastro_de_tutor_pets/">Tutor e Pets</a><a href="/mundo_pet_agendamento_de_servi_os/">Agendamentos</a><a href="/mundo_pet_carrinho_checkout_rastreio/">Carrinho e Pedidos</a><a href="/mundo_pet_painel_do_pet_shop_lojista/">Pet Shop</a><a href="/mundo_pet_painel_do_veterin_rio_agenda/">Veterinário</a><a href="/mundo_pet_painel_do_entregador_corridas/">Entregador</a><a href="/mundo_pet_painel_administrativo_geral/">Administração</a></nav></details></body></html>

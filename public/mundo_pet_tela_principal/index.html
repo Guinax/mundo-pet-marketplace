@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mundo Pet - O Melhor Marketplace para seu Pet</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration verbatim -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary-container": "#fffbff",
+            "on-primary-fixed-variant": "#005236",
+            "outline-variant": "#bccac0",
+            "surface-variant": "#dce2f7",
+            "primary-fixed-dim": "#63dca6",
+            "primary-container": "#00855b",
+            "primary-fixed": "#81f9c1",
+            "secondary-fixed-dim": "#b4c5ff",
+            "inverse-surface": "#293040",
+            "error": "#ba1a1a",
+            "background": "#f9f9ff",
+            "on-error-container": "#93000a",
+            "surface-dim": "#d3daef",
+            "secondary-fixed": "#dbe1ff",
+            "on-background": "#141b2b",
+            "on-secondary-fixed-variant": "#003ea8",
+            "tertiary": "#9c3c3b",
+            "tertiary-container": "#bc5452",
+            "tertiary-fixed": "#ffdad7",
+            "outline": "#6d7a71",
+            "on-secondary": "#ffffff",
+            "surface-tint": "#006c49",
+            "secondary": "#0051d5",
+            "primary": "#006947",
+            "surface-container": "#e9edff",
+            "on-tertiary-fixed-variant": "#802728",
+            "inverse-on-surface": "#edf0ff",
+            "on-surface": "#141b2b",
+            "tertiary-fixed-dim": "#ffb3af",
+            "on-error": "#ffffff",
+            "on-primary-fixed": "#002113",
+            "on-surface-variant": "#3d4a42",
+            "on-tertiary": "#ffffff",
+            "surface-container-low": "#f1f3ff",
+            "on-primary-container": "#f5fff6",
+            "on-secondary-container": "#fefcff",
+            "on-tertiary-fixed": "#410005",
+            "secondary-container": "#316bf3",
+            "on-primary": "#ffffff",
+            "inverse-primary": "#63dca6",
+            "surface-bright": "#f9f9ff",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-highest": "#dce2f7",
+            "error-container": "#ffdad6",
+            "surface": "#f9f9ff",
+            "surface-container-high": "#e1e8fd",
+            "on-secondary-fixed": "#00174b"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-2xl": "3rem",
+            "gutter-mobile": "0.75rem",
+            "space-lg": "1.5rem",
+            "margin": "2rem",
+            "space-xs": "0.25rem",
+            "gutter": "1.5rem",
+            "space-md": "1rem",
+            "space-sm": "0.5rem",
+            "margin-mobile": "1rem",
+            "space-xl": "2rem"
+          },
+          "fontFamily": {
+            "label-lg": ["Inter"],
+            "display-hero-mobile": ["Plus Jakarta Sans"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "body-lg": ["Inter"],
+            "body-sm": ["Inter"],
+            "headline-md": ["Plus Jakarta Sans"],
+            "label-sm": ["Inter"],
+            "headline-lg": ["Plus Jakarta Sans"],
+            "headline-lg-mobile": ["Plus Jakarta Sans"],
+            "display-hero": ["Plus Jakarta Sans"],
+            "label-md": ["Inter"],
+            "body-md": ["Inter"]
+          },
+          "fontSize": {
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "display-hero-mobile": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.015em", "fontWeight": "800" }],
+            "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "700" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "headline-lg-mobile": ["24px", { "lineHeight": "30px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "display-hero": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased flex justify-center min-h-screen">
+<!-- Mobile Canvas Frame (max-w-md matching Shared Components layout) -->
+<div class="w-full max-w-md bg-surface-container-lowest min-h-screen relative pb-28 shadow-2xl flex flex-col">
+<!-- TopAppBar (from Shared Components JSON with semantic delivery address & fast pet badge) -->
+<header class="docked full-width top-0 sticky z-40 bg-surface-container-lowest/90 backdrop-blur-md shadow-sm">
+<div class="flex items-center justify-between px-margin-mobile py-space-sm w-full max-w-md mx-auto">
+<!-- Location Selector -->
+<div class="flex items-center gap-1.5 flex-1 min-w-0 pr-2 cursor-pointer active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-primary text-xl flex-shrink-0" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<div class="flex flex-col min-w-0">
+<span class="text-body-sm font-body-sm text-on-surface-variant flex items-center gap-1">
+              Entregar em
+              <span class="material-symbols-outlined text-sm">expand_more</span>
+</span>
+<span class="text-label-md font-label-md text-on-surface truncate font-bold">Av. Paulista, 1000 - Jardins, SP</span>
+</div>
+</div>
+<!-- Right Quick Actions: Notifications & Active Pet Tag -->
+<div class="flex items-center gap-space-sm flex-shrink-0">
+<!-- Notification Bell -->
+<button aria-label="Notificações" class="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface hover:bg-surface-container active:scale-95 transition-all relative">
+<span class="material-symbols-outlined text-xl">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-tertiary"></span>
+</button>
+<!-- Current Pet Quick Chip -->
+<div class="flex items-center gap-1.5 bg-surface-container-low border border-outline-variant/30 rounded-full py-0.5 px-2 active:scale-95 transition-transform cursor-pointer">
+<div class="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 border border-primary">
+<img class="w-full h-full object-cover" data-alt="Close up portrait of a cheerful, well-groomed Golden Retriever puppy with warm amber eyes looking happily toward the viewer in a bright sunlit modern apartment with fresh botanical green house plants in the background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmXtqdlU9TiwwqImnrwZ9-YGd3MLPPCh_e-jB-am40CZCfGSQHfCctSc_IrsyL1YIN1s4wQ0aaoXFU2T1VFv1cOP_sGMbMVvORdMn5LtRCFUbXauX2-Wz3QjlnlSIYYB3EJ8rgchyR7g1Ya6P5FPtZgwim1cefOONoK4g8M2_ICrQKtbTN9HXv9rA1UHbv0p6CSeud12g6eqd47iRii4HPCtWbPd95s2x4wapnmhdY"/>
+</div>
+<span class="text-label-md font-label-md text-primary font-bold">Thor</span>
+</div>
+</div>
+</div>
+<!-- Search Bar & Filter Header Area -->
+<div class="px-margin-mobile pb-space-sm pt-space-xs">
+<div class="flex items-center gap-space-xs">
+<div class="relative flex-1 flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-outline text-xl">search</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-full text-body-md font-body-md placeholder:text-on-surface-variant/60 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="Buscar rações, pet shops, veterinários..." type="text"/>
+</div>
+<button aria-label="Filtros" class="w-11 h-11 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center hover:bg-surface-variant active:scale-95 transition-all">
+<span class="material-symbols-outlined text-xl">tune</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Stream -->
+<main class="flex-1 flex flex-col gap-space-lg">
+<!-- Section: Categorias Principais (Circular / Rounded Cards com Badges) -->
+<section class="pt-space-sm">
+<div class="grid grid-cols-3 gap-3 px-margin-mobile">
+<!-- Pet Shops -->
+<a class="flex flex-col items-center p-3 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm hover:border-primary/40 active:scale-95 transition-all group" href="#">
+<div class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-1.5 group-hover:bg-primary group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined text-2xl">storefront</span>
+</div>
+<span class="text-label-md font-label-md text-on-surface text-center font-bold">Pet Shops</span>
+<span class="text-[10px] text-on-surface-variant">Rações &amp; Toys</span>
+</a>
+<!-- Veterinários (com Badge 24h) -->
+<a class="flex flex-col items-center p-3 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm hover:border-primary/40 active:scale-95 transition-all relative group" href="#">
+<span class="absolute -top-1.5 -right-1 bg-secondary text-on-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-xs">24h</span>
+<div class="w-12 h-12 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant flex items-center justify-center mb-1.5 group-hover:bg-secondary group-hover:text-on-secondary transition-colors">
+<span class="material-symbols-outlined text-2xl">medical_services</span>
+</div>
+<span class="text-label-md font-label-md text-on-surface text-center font-bold">Veterinários</span>
+<span class="text-[10px] text-on-surface-variant">Clínica &amp; Home</span>
+</a>
+<!-- Banho & Tosa -->
+<a class="flex flex-col items-center p-3 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm hover:border-primary/40 active:scale-95 transition-all group" href="#">
+<div class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-1.5 group-hover:bg-primary group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined text-2xl">shower</span>
+</div>
+<span class="text-label-md font-label-md text-on-surface text-center font-bold">Banho &amp; Tosa</span>
+<span class="text-[10px] text-on-surface-variant">Com Táxi Dog</span>
+</a>
+<!-- Farmácia Pet -->
+<a class="flex flex-col items-center p-3 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm hover:border-primary/40 active:scale-95 transition-all group" href="#">
+<div class="w-12 h-12 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant flex items-center justify-center mb-1.5 group-hover:bg-tertiary group-hover:text-on-tertiary transition-colors">
+<span class="material-symbols-outlined text-2xl">medication</span>
+</div>
+<span class="text-label-md font-label-md text-on-surface text-center font-bold">Farmácia</span>
+<span class="text-[10px] text-on-surface-variant">Remédios &amp; Cuidado</span>
+</a>
+<!-- Hospedagem -->
+<a class="flex flex-col items-center p-3 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm hover:border-primary/40 active:scale-95 transition-all group" href="#">
+<div class="w-12 h-12 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center mb-1.5 group-hover:bg-on-surface group-hover:text-surface-container-lowest transition-colors">
+<span class="material-symbols-outlined text-2xl">hotel</span>
+</div>
+<span class="text-label-md font-label-md text-on-surface text-center font-bold">Hospedagem</span>
+<span class="text-[10px] text-on-surface-variant">Hotel &amp; Creche</span>
+</a>
+<!-- Passeadores -->
+<a class="flex flex-col items-center p-3 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm hover:border-primary/40 active:scale-95 transition-all group" href="#">
+<div class="w-12 h-12 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center mb-1.5 group-hover:bg-primary group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined text-2xl">directions_walk</span>
+</div>
+<span class="text-label-md font-label-md text-on-surface text-center font-bold">Dog Walkers</span>
+<span class="text-[10px] text-on-surface-variant">Passeios VIP</span>
+</a>
+</div>
+</section>
+<!-- Section: Banner Promocional em Destaque ("Festival Pet Care") -->
+<section class="px-margin-mobile">
+<div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary-container to-secondary p-space-md text-on-primary shadow-lg">
+<!-- Background Glow Pattern -->
+<div class="absolute -right-10 -bottom-10 w-44 h-44 rounded-full bg-secondary-fixed/20 blur-2xl pointer-events-none"></div>
+<div class="relative z-10 flex flex-col gap-2 max-w-[65%]">
+<span class="inline-flex items-center gap-1 w-max px-2 py-0.5 rounded-full bg-surface-container-lowest/20 backdrop-blur-md text-[11px] font-bold text-primary-fixed tracking-wide uppercase">
+<span class="material-symbols-outlined text-xs">local_fire_department</span>
+              Festival Pet Care
+            </span>
+<h2 class="text-headline-md font-headline-md font-extrabold leading-tight text-surface-container-lowest">
+              Até 30% OFF em rações premium
+            </h2>
+<p class="text-body-sm font-body-sm text-on-primary-container leading-snug">
+              + Entrega Grátis em até 45 min no seu endereço.
+            </p>
+<div class="pt-2">
+<button class="px-4 py-2 bg-surface-container-lowest text-primary hover:bg-surface-container-low font-headline-sm text-label-md font-bold rounded-full shadow-md active:scale-95 transition-transform flex items-center gap-1.5">
+                Aproveitar Oferta
+                <span class="material-symbols-outlined text-base">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Pet Decorative Image floating right -->
+<div class="absolute -right-3 bottom-0 w-36 h-36 flex items-end justify-center pointer-events-none">
+<img class="w-full h-full object-contain filter drop-shadow-xl" data-alt="A joyful fluffy golden retriever sitting proudly next to an open premium dog food package, crisp studio lighting, vivid emerald and deep blue accents, transparent friendly modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBX33JRFUyL5deu4AeyH4Gz9aoXdzs0V7U_zCR1t7sMxRC03ZDevwt-nY9Nk4Z3Pi0iPtpp8PJcwhcqYnZ9ylaiG0PmJOGdeOofdpND-d5HkoQYztMPECFyxTjx-b2yfs9KFRk9W0YZgW9fw4KjSbvxUeKPc0JPWc7qqXfy5a75VG6XL2Oiqkm-xH8r9sMJYTPJktzQavSLrNF4DBtIZHz60WRpS06cTIkuH0hcEFKl"/>
+</div>
+</div>
+</section>
+<!-- Section: Seletor Rápido de Pet ("Comprando para quem?") -->
+<section class="px-margin-mobile">
+<div class="flex items-center justify-between mb-space-sm">
+<div>
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Comprando para quem?</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Filtre dosagens e recomendações personalizadas</p>
+</div>
+</div>
+<div class="flex items-center gap-space-xs overflow-x-auto no-scrollbar py-1">
+<!-- Active Pet Pill: Thor -->
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border-2 border-primary text-primary flex-shrink-0 shadow-xs active:scale-95 transition-all">
+<div class="w-6 h-6 rounded-full overflow-hidden border border-primary">
+<img class="w-full h-full object-cover" data-alt="A portrait of a golden retriever smiling against a natural sunlit background with soft green foliage." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCP0cqw0GwwpUTRqX_S2rk4k863IhctZPfZkixHi6ffhQ_ae4kLPtgodedttfispyR_lD9s6noNcAVaC0fCfFS6TCpyyS8YyzFj8Qilu15Dozc1sfwRorKNJ2wBJo6gne7M-7XfZs434Nyjtkv1odrzk7rXiYxiB5MmewWDtGwiWEP7CDBtoj0uFNAqfy4Do1ABl3yqChFYMjg1gcmy4x6gIAqFWTfxzaxNdclRrN-F"/>
+</div>
+<span class="text-label-md font-label-md font-bold text-primary">Thor (Golden)</span>
+<span class="material-symbols-outlined text-base" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+<!-- Inactive Pet Pill: Luna -->
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-lowest border border-outline-variant/40 text-on-surface-variant hover:border-outline flex-shrink-0 active:scale-95 transition-all">
+<div class="w-6 h-6 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A beautiful Siamese cat with piercing azure blue eyes resting comfortably on a soft neutral throw." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSyaqr9qDo_zVMbA-DfJsSzrK43j3RHm-uvFcowu0Zoyy6F8bRpK-r3WwKCxTjaecsttbmJH6UwXBOZfxYsfG8kDNHUZwR7b6-YbKf2_LF-f0MCGFoHaCcn_dNQOKZ_RyY5FHe2tWkfhuBoC7fl0mdYtucbvEsepU3GWErbZZZkocjmSRXKveBlNWiVNwGr2P8Din-jr4sn0crJacHvyf9B8bMLgdaUtCqeJ2vKxOI"/>
+</div>
+<span class="text-label-md font-label-md font-medium text-on-surface">Luna (Siamês)</span>
+</button>
+<!-- Add Pet Action Pill -->
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low border border-dashed border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary flex-shrink-0 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-base">add</span>
+<span class="text-label-md font-label-md font-medium">Adicionar Pet</span>
+</button>
+</div>
+</section>
+<!-- Section: Ofertas Relâmpago de Produtos (Horizontal Scroll com Botão "+") -->
+<section class="pl-margin-mobile">
+<div class="flex items-center justify-between pr-margin-mobile mb-space-sm">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Ofertas Relâmpago</h3>
+</div>
+<a class="text-label-md font-label-md text-primary font-bold hover:underline" href="#">Ver todas</a>
+</div>
+<div class="flex gap-space-md overflow-x-auto no-scrollbar pr-margin-mobile pb-2">
+<!-- Produto 1: Royal Canin -->
+<div class="w-48 bg-surface-container-lowest rounded-2xl border border-outline-variant/30 p-space-sm flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow flex-shrink-0">
+<div class="relative">
+<span class="absolute top-1 left-1 bg-tertiary text-on-tertiary text-[10px] font-extrabold px-1.5 py-0.5 rounded-md">-20%</span>
+<div class="w-full h-36 rounded-xl bg-surface-container-low flex items-center justify-center overflow-hidden mb-2">
+<img class="w-28 h-28 object-contain" data-alt="Large bag of Royal Canin adult golden retriever premium dog food standing tall in a studio product photograph with immaculate clean white background and subtle ambient lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDj1nmbm9d3Qp5U-XE26AMkXCBxoNqU33_1S5oVrDuuIKKLG0qbRWIzDts6LgHKKJQy09Snf-6CnMyLRiUBKYgTF2cax0Mn1vGzCGljOQCoEB9o5-HKHYUzIk202QrXST-eC8aeJyZhr9tFQHc_0-jC99M8Fp4HY5PfKGXAcuYdOIMq22Sx3cIEBL_hUvY-kp4W1rv11cKd4MHeDGwkJxnuQkEfh79xFftLwb5JMzS4"/>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-[11px] text-on-surface-variant font-medium">Royal Canin</span>
+<h4 class="text-label-md font-label-md text-on-surface line-clamp-2 leading-snug">Ração Golden Retriever Adulto 15kg</h4>
+<div class="mt-2 flex items-baseline gap-1.5">
+<span class="text-[11px] text-on-surface-variant line-through">R$ 389,90</span>
+<span class="text-headline-sm font-headline-sm font-extrabold text-primary">R$ 311,90</span>
+</div>
+</div>
+<div class="mt-3 flex items-center justify-between pt-2 border-t border-outline-variant/20">
+<span class="text-[10px] text-secondary font-bold flex items-center gap-0.5">
+<span class="material-symbols-outlined text-xs">bolt</span> Em 45 min
+              </span>
+<button aria-label="Adicionar ao carrinho" class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary-container active:scale-90 transition-transform shadow-xs">
+<span class="material-symbols-outlined text-lg">add</span>
+</button>
+</div>
+</div>
+<!-- Produto 2: Bravecto -->
+<div class="w-48 bg-surface-container-lowest rounded-2xl border border-outline-variant/30 p-space-sm flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow flex-shrink-0">
+<div class="relative">
+<span class="absolute top-1 left-1 bg-tertiary text-on-tertiary text-[10px] font-extrabold px-1.5 py-0.5 rounded-md">-35%</span>
+<div class="w-full h-36 rounded-xl bg-surface-container-low flex items-center justify-center overflow-hidden mb-2">
+<img class="w-28 h-28 object-contain" data-alt="Bravecto chewable flea and tick preventative medicine box for medium dogs positioned neatly on a white medical surface with gentle reflection." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGZANjeA6FD1QogUb6IJ2S_EJmgcmpenpXCivjWkYNWNJMIzvBGurCWYN6GDBP68LXz9lMFHfEkMxVwffTHKMxcEa5FxqjzgL30Wqp3nsF9G4L7kekWIUVsl67taHoYJ12_LgvUHN4dDm7wrP4awjcy8IJn5LJPeaU5Er8ECe6jfOkwAh_-ZcP17EouRsB_ZkPPrccRWjlV8aW1Nw5B7E2kEtC51eSYM28KbxNcnj8"/>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-[11px] text-on-surface-variant font-medium">MSD Saúde Animal</span>
+<h4 class="text-label-md font-label-md text-on-surface line-clamp-2 leading-snug">Antipulgas Bravecto Cães 10 a 20kg</h4>
+<div class="mt-2 flex items-baseline gap-1.5">
+<span class="text-[11px] text-on-surface-variant line-through">R$ 289,00</span>
+<span class="text-headline-sm font-headline-sm font-extrabold text-primary">R$ 187,85</span>
+</div>
+</div>
+<div class="mt-3 flex items-center justify-between pt-2 border-t border-outline-variant/20">
+<span class="text-[10px] text-secondary font-bold flex items-center gap-0.5">
+<span class="material-symbols-outlined text-xs">local_shipping</span> Frete Grátis
+              </span>
+<button aria-label="Adicionar ao carrinho" class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary-container active:scale-90 transition-transform shadow-xs">
+<span class="material-symbols-outlined text-lg">add</span>
+</button>
+</div>
+</div>
+<!-- Produto 3: Pipicat -->
+<div class="w-48 bg-surface-container-lowest rounded-2xl border border-outline-variant/30 p-space-sm flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow flex-shrink-0">
+<div class="relative">
+<span class="absolute top-1 left-1 bg-tertiary text-on-tertiary text-[10px] font-extrabold px-1.5 py-0.5 rounded-md">-15%</span>
+<div class="w-full h-36 rounded-xl bg-surface-container-low flex items-center justify-center overflow-hidden mb-2">
+<img class="w-28 h-28 object-contain" data-alt="Pipicat Classic cat litter packaging 4kg depicted cleanly on a white background with a crisp modern layout." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA941DOH9_8Io3vDxlDAjtbmxSgbzuugjva6j4vipSXkgwqO_Jwe2b5tR5Pt7QqklJDnJH-t4zvdsUWIpXH17FYBWePUA-0OsJiQTU-c8ZKEzS-eXz1p38vwpiEYNGBOQ4H5V2WIgZlUeM0kAaBiu5hKggRi6FWygXh_omBRG8k4lDwUQmvmPco_SRqLYV4l7o00rZ2dR_Hq3l6yJDiwS3xBc4tNMUg1YbmThdAc6LC"/>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-[11px] text-on-surface-variant font-medium">Pipicat</span>
+<h4 class="text-label-md font-label-md text-on-surface line-clamp-2 leading-snug">Areia Sanitária Pipicat Classic 4kg</h4>
+<div class="mt-2 flex items-baseline gap-1.5">
+<span class="text-[11px] text-on-surface-variant line-through">R$ 19,90</span>
+<span class="text-headline-sm font-headline-sm font-extrabold text-primary">R$ 16,90</span>
+</div>
+</div>
+<div class="mt-3 flex items-center justify-between pt-2 border-t border-outline-variant/20">
+<span class="text-[10px] text-on-surface-variant font-medium">Hoje até 18h</span>
+<button aria-label="Adicionar ao carrinho" class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary-container active:scale-90 transition-transform shadow-xs">
+<span class="material-symbols-outlined text-lg">add</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: Serviços em Destaque & Agendamento Rápido -->
+<section class="px-margin-mobile">
+<div class="flex items-center justify-between mb-space-sm">
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Serviços &amp; Agendamentos</h3>
+<a class="text-label-md font-label-md text-primary font-bold hover:underline" href="#">Ver agenda</a>
+</div>
+<div class="flex flex-col gap-space-sm">
+<!-- Card Serviço 1: Veterinário em Domicílio ou Clínica -->
+<div class="p-space-md rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm flex gap-space-md items-center hover:border-primary/50 transition-all">
+<div class="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container-high relative">
+<img class="w-full h-full object-cover" data-alt="A friendly female veterinarian in clean teal medical scrubs smiling warmly while examining a calm golden dog in a well-lit clinic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAozJxLR2YbSD_pYnT69-lazOGWX1m7lCK_bryxBwwwgqaWoV9txIdvkEiUSoLRzxUys2QW2bkXd_8uVeSha7oAhfw_pNzOZgC76c_vJLu4iijA4JBmyBIhEej0nGgmnaIdUciZ1VkoVFlz_2HaJGpax--DSwCxMTq85xogqwp1McHgFwL3PJ4CbMosHirphJRTw7WmOT7-_V92Y02IV0puz7PD6h2nLA42-D0euWM7"/>
+<span class="absolute bottom-1 right-1 bg-surface-container-lowest/90 px-1 py-0.5 rounded text-[10px] font-bold text-on-surface flex items-center">
+                ★ 4.9
+              </span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-[10px] font-bold text-secondary bg-secondary-fixed px-1.5 py-0.2 rounded">Domicílio ou Clínica</span>
+</div>
+<h4 class="text-label-lg font-label-lg text-on-surface truncate mt-0.5 font-bold">Consulta Veterinária Geral</h4>
+<p class="text-body-sm font-body-sm text-on-surface-variant line-clamp-1">Avaliação completa, vacinas e receitas</p>
+<div class="mt-1.5 flex items-center justify-between">
+<span class="text-headline-sm font-headline-sm font-bold text-primary">A partir de R$ 120</span>
+<button class="px-3 py-1 bg-secondary text-on-secondary rounded-lg text-label-md font-label-md font-bold active:scale-95 transition-transform">
+                  Agendar
+                </button>
+</div>
+</div>
+</div>
+<!-- Card Serviço 2: Banho & Tosa com Táxi Dog -->
+<div class="p-space-md rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm flex gap-space-md items-center hover:border-primary/50 transition-all">
+<div class="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container-high relative">
+<img class="w-full h-full object-cover" data-alt="A happy fluffy white dog receiving a gentle warm bubble bath in a modern professional pet grooming spa salon." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2rRNSPZ6sS7_JnJbCm_HwdfQeR2rK3uLwjo5eWent0Uji6tW1YAf46EJ7XoRU7MclBeQoI6muJa72oVb64fkDSooYAEVwk4HVTWUb82LkhnVQCn0XZhcPkDP1XxwzwzyJ-lPjkuMvWZudSRsAzXhg0IhAT0w5xzKVRPPvBcuBPI7HBCLSMRrTQnoJaCuKpoR4JGJ8fC1lUltDQ-G4i_6gQVoWVwS1bE-CQFR8g5zw"/>
+<span class="absolute bottom-1 right-1 bg-surface-container-lowest/90 px-1 py-0.5 rounded text-[10px] font-bold text-on-surface flex items-center">
+                ★ 4.8
+              </span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.2 rounded flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[10px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+                  Verificado
+                </span>
+<span class="text-[10px] text-on-surface-variant font-medium">Com Táxi Dog</span>
+</div>
+<h4 class="text-label-lg font-label-lg text-on-surface truncate mt-0.5 font-bold">Banho, Tosa Higiênica &amp; Spa</h4>
+<p class="text-body-sm font-body-sm text-on-surface-variant line-clamp-1">Buscamos e levamos seu pet em segurança</p>
+<div class="mt-1.5 flex items-center justify-between">
+<span class="text-headline-sm font-headline-sm font-bold text-primary">A partir de R$ 65</span>
+<button class="px-3 py-1 bg-primary text-on-primary rounded-lg text-label-md font-label-md font-bold active:scale-95 transition-transform">
+                  Agendar
+                </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: Estabelecimentos Próximos (Pet shops & Clínicas) -->
+<section class="px-margin-mobile">
+<div class="flex items-center justify-between mb-space-sm">
+<div>
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Perto de você</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Lojas e clínicas com entrega expressa</p>
+</div>
+<a class="text-label-md font-label-md text-primary font-bold hover:underline" href="#">Filtrar mapa</a>
+</div>
+<div class="flex flex-col gap-space-sm">
+<!-- Loja 1: Petz Jardins -->
+<div class="p-space-md rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center border border-outline-variant/20 flex-shrink-0">
+<span class="material-symbols-outlined text-primary text-2xl">pets</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<h4 class="text-label-lg font-label-lg text-on-surface font-bold truncate">Petz Jardins</h4>
+<span class="flex items-center text-xs font-bold text-on-surface">
+<span class="material-symbols-outlined text-xs text-amber-500 mr-0.5" style="font-variation-settings: 'FILL' 1;">star</span>
+                    4.9
+                  </span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant truncate">
+                  1.2 km • 35-45 min • <span class="text-primary font-bold">Frete Grátis &gt; R$99</span>
+</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</div>
+<!-- Loja 2: Cobasi Express -->
+<div class="p-space-md rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center border border-outline-variant/20 flex-shrink-0">
+<span class="material-symbols-outlined text-secondary text-2xl">storefront</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<h4 class="text-label-lg font-label-lg text-on-surface font-bold truncate">Cobasi Express</h4>
+<span class="flex items-center text-xs font-bold text-on-surface">
+<span class="material-symbols-outlined text-xs text-amber-500 mr-0.5" style="font-variation-settings: 'FILL' 1;">star</span>
+                    4.8
+                  </span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant truncate">
+                  2.0 km • 25-35 min • Entrega R$ 5,90
+                </p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</div>
+<!-- Loja 3: Clínica Vet Care 24h -->
+<div class="p-space-md rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-12 h-12 rounded-xl bg-tertiary-fixed text-on-tertiary-fixed-variant flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-2xl">emergency</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<h4 class="text-label-lg font-label-lg text-on-surface font-bold truncate">Clínica Vet Care 24h</h4>
+<span class="bg-tertiary text-on-tertiary text-[9px] font-bold px-1.5 py-0.2 rounded-full">Emergência</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant truncate">
+                  800 m • Plantão veterinário e exames rápidos
+                </p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Directly executing Shared Components JSON specifications with "Início" active) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter-mobile py-space-xs max-w-md mx-auto bg-surface-container-lowest dark:bg-inverse-surface shadow-[0px_-2px_10px_rgba(17,24,39,0.05)]">
+<!-- Início (ACTIVE ITEM) -->
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed font-bold py-space-xs active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="text-label-sm font-label-sm mt-0.5">Início</span>
+</a>
+<!-- Explorar -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant py-space-xs hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-2xl">search</span>
+<span class="text-label-sm font-label-sm mt-0.5">Explorar</span>
+</a>
+<!-- Pedidos -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant py-space-xs hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-2xl">receipt_long</span>
+<span class="text-label-sm font-label-sm mt-0.5">Pedidos</span>
+</a>
+<!-- Favoritos -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant py-space-xs hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-2xl">favorite</span>
+<span class="text-label-sm font-label-sm mt-0.5">Favoritos</span>
+</a>
+<!-- Perfil -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant py-space-xs hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-2xl">person</span>
+<span class="text-label-sm font-label-sm mt-0.5">Perfil</span>
+</a>
+</nav>
+</div>
+<style>#mp-switch{position:fixed;z-index:99999;bottom:16px;right:16px;background:#0e6759;color:white;padding:10px 14px;border-radius:16px;box-shadow:0 5px 18px #0004;font:600 14px system-ui;max-height:76vh;overflow:auto}#mp-switch summary{cursor:pointer;list-style:auto}#mp-switch nav{display:flex;flex-direction:column;gap:7px;padding-top:9px}#mp-switch a{color:white!important;text-decoration:none;padding:6px 8px;border:1px solid #fff5;border-radius:7px;white-space:nowrap}#mp-switch a:hover{background:#fff3}</style><details id="mp-switch"><summary>Telas do Mundo Pet</summary><nav><a href="/mundo_pet_tela_principal/">Home</a><a href="/mundo_pet_cadastro_de_tutor_pets/">Tutor e Pets</a><a href="/mundo_pet_agendamento_de_servi_os/">Agendamentos</a><a href="/mundo_pet_carrinho_checkout_rastreio/">Carrinho e Pedidos</a><a href="/mundo_pet_painel_do_pet_shop_lojista/">Pet Shop</a><a href="/mundo_pet_painel_do_veterin_rio_agenda/">Veterinário</a><a href="/mundo_pet_painel_do_entregador_corridas/">Entregador</a><a href="/mundo_pet_painel_administrativo_geral/">Administração</a></nav></details></body></html>

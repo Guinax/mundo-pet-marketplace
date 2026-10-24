@@ -1,5 +1,11 @@
 # Mundo Pet Marketplace
 
-Projeto independente da Adega Maromba. Base visual exportada do Google Stitch com oito telas: principal, cadastro, agendamento, carrinho, lojista, veterinário, entregador e administração.
+Protótipo visual com as oito telas aprovadas do Google Stitch. A entrada React/Vite apresenta o HTML original em um frame acessível de tela inteira, preservando os estilos e o layout móvel. As telas ficam em `public/` e são copiadas pelo build. O seletor “Telas do Mundo Pet” permite navegar por todas as áreas.
 
-Estado: layouts de interface; cadastros, pagamentos, pedidos e banco de dados ainda não estão implementados. Não publicar como plataforma comercial antes de configurar e testar integrações e segurança.
+## Executar
+
+`npm install`, `npm run dev`, `npm run build`.
+
+## Limitações
+
+Este protótipo não processa cadastros, compras, pagamentos, entregas ou agendamentos. Os dados são demonstrativos. Imagens, Tailwind e fontes usam serviços externos e exigem internet.
