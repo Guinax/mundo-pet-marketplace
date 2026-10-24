@@ -105,7 +105,7 @@ const actions={
 document.addEventListener('click',async event=>{const el=event.target.closest('[data-action]');if(!el)return;const action=actions[el.dataset.action];if(!action)return;event.preventDefault();if(el.disabled)return;el.disabled=true;try{await action(el);}catch(error){toast(friendly(error),true);}finally{if(el.isConnected)el.disabled=false;}});
 
 const forms={
- 'mp-recovery-form':async(form,v)=>{const {error}=await db.auth.resetPasswordForEmail(v.email.trim(),{redirectTo:location.origin+route.home});if(error)throw error;modal('Verifique seu e-mail',`<p>Se o endereço estiver cadastrado, você receberá um link para criar uma nova senha.</p>${btn('Voltar para entrar','login','mp-full')}`);},
+ 'mp-recovery-form':async(form,v)=>{const {error}=await db.auth.resetPasswordForEmail(v.email.trim(),{redirectTo:location.origin+route.home+'?recovery=1'});if(error)throw error;modal('Verifique seu e-mail',`<p>Se o endereço estiver cadastrado, você receberá um link para criar uma nova senha.</p>${btn('Voltar para entrar','login','mp-full')}`);},
  'mp-new-password-form':async(form,v)=>{if(v.password!==v.confirm)throw new Error('As senhas não coincidem.');const {error}=await db.auth.updateUser({password:v.password});if(error)throw error;closeModal();await loadUser();await render();toast('Senha alterada com sucesso.');},
  'mp-coupon-form':async(form,v)=>{const code=v.coupon.trim().toUpperCase();if(code&&code!=='MUNDOPET10')throw new Error('Cupom inválido. No catálogo de demonstração, use MUNDOPET10.');sessionStorage.setItem('mundopet.coupon',code);localStorage.removeItem('mundopet.order-request');await render();toast(code?'Cupom de demonstração aplicado.':'Cupom removido.');},
  'mp-auth-form':async(form,v)=>{
@@ -165,7 +165,11 @@ shell(page,`<div class="mp-empty" role="status">Carregando Mundo Pet…</div>`);
 async function init(){
  const {data:{session},error}=await db.auth.getSession();if(error)throw error;state.user=session?.user||null;
  await Promise.all([loadPublic(),loadUser()]);await render();
- if(new URLSearchParams(location.search).has('login')){if(!state.user)authModal();else toast('E-mail confirmado. Sua conta está conectada.');}
+ const authParams=new URLSearchParams(location.search);
+ if(authParams.has('recovery')&&state.user)newPasswordModal();
+ else if(authParams.has('login')){if(!state.user)authModal();else toast('E-mail confirmado. Sua conta está conectada.');}
+ const callbackError=new URLSearchParams(location.hash.slice(1)).get('error_description')||authParams.get('error_description');
+ if(callbackError)toast('Link inválido ou expirado. Use Esqueci minha senha para solicitar outro.',true);
 }
 db.auth.onAuthStateChange((event,session)=>{
  if(event==='PASSWORD_RECOVERY'){state.user=session?.user||null;setTimeout(newPasswordModal,0);}
