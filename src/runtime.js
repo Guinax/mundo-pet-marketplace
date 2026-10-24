@@ -11,7 +11,7 @@ async function render() {
  try {
   const body=await renderers[page]();if(token!==rendering)return;
   shell(page,body,state.user?state.profile?.full_name||'Sua conta conectada':'Mundo Pet');
-  if(page==='home'){updateCatalog(filter,search);const input=document.getElementById('mp-search');input.value=search;if(new URLSearchParams(location.search).has('explore'))document.getElementById('mp-catalog')?.scrollIntoView({block:'start'});}
+  if(page==='home'){updateCatalog(filter,search);const input=document.getElementById('mp-search');if(input)input.value=search;if(new URLSearchParams(location.search).has('explore'))requestAnimationFrame(()=>setTimeout(()=>document.getElementById('mp-catalog')?.scrollIntoView({behavior:'smooth',block:'start'}),100));}
  }catch(error){shell(page,`<div class="mp-runtime-error"><strong>Não foi possível carregar esta página.</strong><p>${esc(friendly(error))}</p>${btn('Tentar novamente','refresh')}</div>`);}
 }
 function friendly(error) {
@@ -81,7 +81,7 @@ const actions={
  favorite:async el=>{toggleFavorite(el.dataset.id);updateCatalog(filter,search);toast('Favoritos atualizados.');},
  filter:el=>{filter=el.dataset.filter;document.querySelectorAll('.mp-category').forEach(n=>n.classList.toggle('active',n.dataset.filter===filter));updateCatalog(filter,search);document.getElementById('mp-catalog')?.scrollIntoView({behavior:'smooth',block:'start'});},
  'clear-filter':()=>{filter='';search='';if(document.getElementById('mp-search'))document.getElementById('mp-search').value='';document.querySelectorAll('.mp-category').forEach(n=>n.classList.remove('active'));updateCatalog();},
- explore:()=>{document.getElementById('mp-catalog')?.scrollIntoView({behavior:'smooth',block:'start'});document.getElementById('mp-search')?.focus();},
+ explore:()=>{if(page!=='home'){location.href=route.home+'?explore=1';return;}filter='';search='';updateCatalog();document.querySelectorAll('.mp-category').forEach(n=>n.classList.remove('active'));const input=document.getElementById('mp-search');if(input)input.value='';document.getElementById('mp-catalog')?.scrollIntoView({behavior:'smooth',block:'start'});},
  'book-service':el=>{sessionStorage.setItem('mundopet.service',el.dataset.id);location.href=route.booking;},
  'edit-pet':el=>{const p=state.pets.find(p=>p.id===el.dataset.id);modal('Editar pet',petEditor(p));},
  'cart-quantity':async el=>{const items=cart();const item=items.find(i=>i.product_id===el.dataset.id);if(!item)return;const qty=item.quantity+Number(el.dataset.change);const p=state.products.find(p=>p.id===item.product_id);if(qty>Math.min(p?.stock||0,99))throw new Error('Quantidade maior que o estoque disponível.');item.quantity=qty;saveCart(items);await render();},
