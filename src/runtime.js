@@ -16,7 +16,7 @@ async function render() {
 }
 function friendly(error) {
  const message=error?.message||String(error);
- if(/Invalid login credentials/i.test(message))return 'E-mail ou senha incorretos.';
+ if(/Invalid login credentials/i.test(message))return 'Não foi possível entrar com este e-mail e senha. Se você acabou de confirmar o cadastro, tente recuperar a senha.';
  if(/Email not confirmed/i.test(message))return 'Confirme o e-mail no link recebido antes de entrar.';
  if(/User already registered/i.test(message))return 'Esse e-mail já tem uma conta. Use a opção Entrar.';
  if(/rate limit|too many requests/i.test(message))return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
@@ -110,7 +110,7 @@ const forms={
  'mp-coupon-form':async(form,v)=>{const code=v.coupon.trim().toUpperCase();if(code&&code!=='MUNDOPET10')throw new Error('Cupom inválido. No catálogo de demonstração, use MUNDOPET10.');sessionStorage.setItem('mundopet.coupon',code);localStorage.removeItem('mundopet.order-request');await render();toast(code?'Cupom de demonstração aplicado.':'Cupom removido.');},
  'mp-auth-form':async(form,v)=>{
   if(form.dataset.mode==='signup'){
-   const {data,error}=await db.auth.signUp({email:v.email.trim(),password:v.password,options:{data:{full_name:v.name.trim()},emailRedirectTo:'https://mundo-pet-marketplace.vercel.app/'}});if(error)throw error;
+   const {data,error}=await db.auth.signUp({email:v.email.trim(),password:v.password,options:{data:{full_name:v.name.trim()},emailRedirectTo:location.origin+route.home+'?login=1'}});if(error)throw error;
    if(!data.session){modal('Confirme seu e-mail',`<p style="margin-top:16px">Abra o link de confirmação enviado ao seu e-mail. Depois, volte ao Mundo Pet e entre com sua senha.</p><p class="mp-muted">Se o endereço já tiver cadastro, use a opção Entrar. Não compartilhe sua senha ou o link de confirmação.</p>${btn('Ir para entrar','login','mp-full')}`);return;}
    state.user=data.user;
   }else {const {data,error}=await db.auth.signInWithPassword({email:v.email.trim(),password:v.password});if(error)throw error;state.user=data.user;}
@@ -165,6 +165,7 @@ shell(page,`<div class="mp-empty" role="status">Carregando Mundo Pet…</div>`);
 async function init(){
  const {data:{session},error}=await db.auth.getSession();if(error)throw error;state.user=session?.user||null;
  await Promise.all([loadPublic(),loadUser()]);await render();
+ if(new URLSearchParams(location.search).has('login')){if(!state.user)authModal();else toast('E-mail confirmado. Sua conta está conectada.');}
 }
 db.auth.onAuthStateChange((event,session)=>{
  if(event==='PASSWORD_RECOVERY'){state.user=session?.user||null;setTimeout(newPasswordModal,0);}
