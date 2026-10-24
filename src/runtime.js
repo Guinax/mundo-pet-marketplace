@@ -29,9 +29,12 @@ function friendly(error) {
 async function refresh() {await Promise.all([loadPublic(),loadUser()]);await render();}
 function requireLogin() {if(state.user)return true;authModal();return false;}
 function authModal(mode='login') {
+ if(mode==='recover'){modal('Recuperar senha',`<form id="mp-recovery-form" class="mp-stack">${field('email','E-mail cadastrado','','email','required autocomplete="email"')}<p class="mp-muted">Enviaremos um link para redefinir sua senha. Confira também a caixa de spam.</p><p class="mp-error" role="alert"></p><button type="submit" class="mp-btn mp-full">Enviar link de recuperação</button>${btn('Voltar para entrar','login','outline mp-full')}</form>`);return;}
+
  openingAccount=true;
- modal(mode==='signup'?'Criar minha conta':'Entrar no Mundo Pet',`<form id="mp-auth-form" class="mp-stack" data-mode="${mode}">${mode==='signup'?field('name','Seu nome','','text','required autocomplete="name" maxlength="120"'):''}${field('email','E-mail','','email','required autocomplete="email"')}${field('password','Senha','','password',`required minlength="8" autocomplete="${mode==='signup'?'new-password':'current-password'}"`)}<label class="mp-check"><input type="checkbox" id="mp-show-password"> Mostrar senha</label><p class="mp-error" role="alert"></p><button type="submit" class="mp-btn mp-full">${mode==='signup'?'Criar conta':'Entrar'}</button>${btn(mode==='signup'?'Já tenho conta':'Quero criar minha conta',mode==='signup'?'login':'signup','outline mp-full')}<p class="mp-muted">Os cadastros de parceiros são analisados pela administração. Criar uma conta não libera acesso aos dados de outras pessoas.</p></form>`);
+ modal(mode==='signup'?'Criar minha conta':'Entrar no Mundo Pet',`<form id="mp-auth-form" class="mp-stack" data-mode="${mode}">${mode==='signup'?field('name','Seu nome','','text','required autocomplete="name" maxlength="120"'):''}${field('email','E-mail','','email','required autocomplete="email"')}${field('password','Senha','','password',`required minlength="8" autocomplete="${mode==='signup'?'new-password':'current-password'}"`)}<label class="mp-check"><input type="checkbox" id="mp-show-password"> Mostrar senha</label><p class="mp-error" role="alert"></p><button type="submit" class="mp-btn mp-full">${mode==='signup'?'Criar conta':'Entrar'}</button>${btn(mode==='signup'?'Já tenho conta':'Quero criar minha conta',mode==='signup'?'login':'signup','outline mp-full')}${btn('Esqueci minha senha','recover','outline mp-full')}<p class="mp-muted">Os cadastros de parceiros são analisados pela administração. Criar uma conta não libera acesso aos dados de outras pessoas.</p></form>`);
 }
+function newPasswordModal(){modal('Definir nova senha',`<form id="mp-new-password-form" class="mp-stack">${field('password','Nova senha','','password','required minlength="8" autocomplete="new-password"')}${field('confirm','Confirmar nova senha','','password','required minlength="8" autocomplete="new-password"')}<p class="mp-error" role="alert"></p><button type="submit" class="mp-btn mp-full">Salvar nova senha</button></form>`);}
 function accountModal() {
  if(!state.user){authModal();return;}
  modal('Minha conta',`<p>${esc(state.profile?.full_name||state.user.email)}</p><p class="mp-muted">${esc(state.user.email)}</p><div class="mp-stack" style="margin-top:18px"><a class="mp-btn" href="${route.tutor}">Meus dados e pets</a><a class="mp-btn outline" href="${route.cart}?orders=1">Meus pedidos</a><a class="mp-btn outline" href="${route.booking}">Meus agendamentos</a>${btn('Solicitar acesso profissional','apply','outline')}${btn('Sair da conta','logout','danger')}</div>`);
@@ -69,7 +72,7 @@ async function orderStatus(id,status,code='') {
  await refresh();toast('Pedido atualizado: '+statusText(status));
 }
 const actions={
- home:()=>{location.href=route.home;},account:accountModal,login:()=>authModal(),signup:()=>authModal('signup'),'close-modal':closeModal,
+ home:()=>{location.href=route.home;},account:accountModal,login:()=>authModal(),signup:()=>authModal('signup'),recover:()=>authModal('recover'),'close-modal':closeModal,
  logout:async()=>{await result(db.auth.signOut());state.user=null;await loadUser();closeModal();await render();toast('Você saiu da conta.');},
  refresh:async()=>{await refresh();toast('Dados atualizados.');},
  apply:el=>applicationModal(el.dataset.role||'store'),
@@ -102,6 +105,8 @@ const actions={
 document.addEventListener('click',async event=>{const el=event.target.closest('[data-action]');if(!el)return;const action=actions[el.dataset.action];if(!action)return;event.preventDefault();if(el.disabled)return;el.disabled=true;try{await action(el);}catch(error){toast(friendly(error),true);}finally{if(el.isConnected)el.disabled=false;}});
 
 const forms={
+ 'mp-recovery-form':async(form,v)=>{const {error}=await db.auth.resetPasswordForEmail(v.email.trim(),{redirectTo:location.origin+route.home});if(error)throw error;modal('Verifique seu e-mail',`<p>Se o endereço estiver cadastrado, você receberá um link para criar uma nova senha.</p>${btn('Voltar para entrar','login','mp-full')}`);},
+ 'mp-new-password-form':async(form,v)=>{if(v.password!==v.confirm)throw new Error('As senhas não coincidem.');const {error}=await db.auth.updateUser({password:v.password});if(error)throw error;closeModal();await loadUser();await render();toast('Senha alterada com sucesso.');},
  'mp-coupon-form':async(form,v)=>{const code=v.coupon.trim().toUpperCase();if(code&&code!=='MUNDOPET10')throw new Error('Cupom inválido. No catálogo de demonstração, use MUNDOPET10.');sessionStorage.setItem('mundopet.coupon',code);localStorage.removeItem('mundopet.order-request');await render();toast(code?'Cupom de demonstração aplicado.':'Cupom removido.');},
  'mp-auth-form':async(form,v)=>{
   if(form.dataset.mode==='signup'){
@@ -162,6 +167,7 @@ async function init(){
  await Promise.all([loadPublic(),loadUser()]);await render();
 }
 db.auth.onAuthStateChange((event,session)=>{
+ if(event==='PASSWORD_RECOVERY'){state.user=session?.user||null;setTimeout(newPasswordModal,0);}
  if(event==='TOKEN_REFRESHED')state.user=session?.user||null;
  if(event==='SIGNED_OUT'){state.user=null;setTimeout(()=>{loadUser().then(render);},0);}
  if(event==='SIGNED_IN'&&!state.user&&!openingAccount){state.user=session?.user||null;setTimeout(()=>{loadUser().then(render);},0);}
