@@ -1,7 +1,9 @@
-# Integração Stitch — 24/10/2026
+# Mundo Pet — implementação funcional
 
-As oito telas HTML foram importadas do pacote aprovado `mundo_pet_home_stitch_integrado(1).zip`. O layout da Home é preservado em `public/stitch-home.html`. A entrada React/Vite permanece ativa e apresenta esse HTML em um iframe com título e altura total da tela. O seletor original dá acesso às oito páginas.
+As referências visuais aprovadas do Stitch continuam orientando paleta, fontes, cartões e estrutura móvel das oito áreas. Conteúdo fictício de usuários, avaliações, faturamento e saldos foi substituído pelos dados da conta ou por estados vazios. Os fluxos que ainda não têm provedor comercial são identificados como demonstração.
 
-As páginas e referências internas foram verificadas antes da publicação. Cadastros, pagamentos, estoque, entregas e agendamentos reais ainda não estão implementados. Nenhum projeto da Adega Maromba foi alterado.
+Os dados de tutor/pets e credenciamento ficam no Supabase com autenticação e RLS. Preços, estoque, transições de pedido, código de entrega e disponibilidade de agenda são verificados no servidor.
 
-Os screenshots de referência permanecem preservados no ZIP original aprovado. O build Vite local foi validado antes da publicação.
+Verificações: build de produção, testes de cálculos e validação de dados, testes transacionais de preço/idempotência/RLS/agenda/entrega e interação no navegador com busca, carrinho, quantidade e barreiras de autenticação.
+
+Login com credenciais reais e testes completos dos painéis autenticados dependem da sessão do usuário; não foram simulados como uma sessão de produção. Pagamentos e contratações reais continuam bloqueados até sua configuração.
