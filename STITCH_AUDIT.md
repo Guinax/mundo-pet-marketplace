@@ -24,3 +24,8 @@ O repositório já possui `index.html` do projeto Vite (React 19) e `package.jso
 3. Inspecionar scripts/recursos externos, acessibilidade, segurança e viabilidade de migrar o layout para componentes React.
 4. Testar build Vite (atualmente, no repositório observado, a entrada `src/main.jsx` ainda não foi localizada).
 5. Somente então planejar as tabelas, autenticação e políticas do Supabase, **sem mexer na Adega Maromba** e sem publicar site em produção sem aprovação.
+
+## Atualização — 24/10/2026
+- Arquivo `src/main.jsx` criado para corrigir a entrada que faltava no `index.html` do Vite; fornece painel inicial com as oito áreas previstas. Ainda não foi executado build validado no ambiente GitHub.
+- **Importação original ainda pendente**: `stitch-original/` ainda não contém os oito HTMLs e PNGs do ZIP. Os arquivos originais permanecem no pacote ZIP entregue na conversa. O preview em `stitch-preview/` depende dessa importação e não deve ser considerado funcional.
+- Nenhuma integração Supabase, deploy ou alteração da Adega Maromba foi feita nesta etapa.
