@@ -76,9 +76,9 @@ const actions={
  'edit-address':()=>{if(requireLogin())location.href=route.tutor;},
  'add-cart':async el=>{const p=state.products.find(p=>p.id===el.dataset.id);if(!p||p.stock<1)throw new Error('Produto indisponível.');const items=cart();const other=items.map(i=>state.products.find(p=>p.id===i.product_id)).some(x=>x&&x.store_id!==p.store_id);if(other)throw new Error('Finalize o carrinho da outra loja antes de adicionar este produto.');const old=items.find(i=>i.product_id===p.id);if(old){if(old.quantity>=Math.min(p.stock,99))throw new Error('Limite de estoque atingido.');old.quantity++;}else items.push({product_id:p.id,quantity:1});saveCart(items);await render();toast('Produto adicionado ao carrinho.');},
  favorite:async el=>{toggleFavorite(el.dataset.id);updateCatalog(filter,search);toast('Favoritos atualizados.');},
- filter:el=>{filter=el.dataset.filter;document.querySelectorAll('.mp-category').forEach(n=>n.classList.toggle('active',n.dataset.filter===filter));updateCatalog(filter,search);document.getElementById('mp-catalog').scrollIntoView({behavior:'smooth',block:'start'});},
- 'clear-filter':()=>{filter='';search='';document.getElementById('mp-search').value='';document.querySelectorAll('.mp-category').forEach(n=>n.classList.remove('active'));updateCatalog();},
- explore:()=>{document.getElementById('mp-catalog').scrollIntoView({behavior:'smooth',block:'start'});document.getElementById('mp-search').focus();},
+ filter:el=>{filter=el.dataset.filter;document.querySelectorAll('.mp-category').forEach(n=>n.classList.toggle('active',n.dataset.filter===filter));updateCatalog(filter,search);document.getElementById('mp-catalog')?.scrollIntoView({behavior:'smooth',block:'start'});},
+ 'clear-filter':()=>{filter='';search='';if(document.getElementById('mp-search'))document.getElementById('mp-search').value='';document.querySelectorAll('.mp-category').forEach(n=>n.classList.remove('active'));updateCatalog();},
+ explore:()=>{document.getElementById('mp-catalog')?.scrollIntoView({behavior:'smooth',block:'start'});document.getElementById('mp-search')?.focus();},
  'book-service':el=>{sessionStorage.setItem('mundopet.service',el.dataset.id);location.href=route.booking;},
  'edit-pet':el=>{const p=state.pets.find(p=>p.id===el.dataset.id);modal('Editar pet',petEditor(p));},
  'cart-quantity':async el=>{const items=cart();const item=items.find(i=>i.product_id===el.dataset.id);if(!item)return;const qty=item.quantity+Number(el.dataset.change);const p=state.products.find(p=>p.id===item.product_id);if(qty>Math.min(p?.stock||0,99))throw new Error('Quantidade maior que o estoque disponível.');item.quantity=qty;saveCart(items);await render();},
@@ -153,7 +153,7 @@ document.addEventListener('submit',async event=>{const form=event.target;const h
 document.addEventListener('input',event=>{if(event.target.id==='mp-search'){search=event.target.value;updateCatalog(filter,search);}});
 document.addEventListener('change',event=>{
  if(event.target.id==='mp-show-password'){const input=document.querySelector('#mp-auth-form [name="password"]');input.type=event.target.checked?'text':'password';}
- if(event.target.closest('#mp-booking-form')){const form=document.getElementById('mp-booking-form');const v=formObject(form);const price=state.services.find(s=>s.id===v.service)?.price_cents||0;document.getElementById('mp-booking-total').textContent=money(price+({home:3000,taxi:4000}[v.mode]||0));}
+ if(event.target.closest('#mp-booking-form')){const form=document.getElementById('mp-booking-form');const v=formObject(form);const price=state.services.find(s=>s.id===v.service)?.price_cents||0;const total=document.getElementById('mp-booking-total');if(total)total.textContent=money(price+({home:3000,taxi:4000}[v.mode]||0));}
 });
 
 shell(page,`<div class="mp-empty" role="status">Carregando Mundo Pet…</div>`);
