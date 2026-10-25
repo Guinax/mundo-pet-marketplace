@@ -62,10 +62,10 @@ async function productModal(id,storeId) {
  const price=n=>n==null?'':(n/100).toFixed(2);
  modal(id?'Editar produto':'Cadastrar produto',`<form id="mp-product-form" class="mp-stack" data-id="${esc(id||'')}" data-store="${esc(storeId)}">
  ${section('Fotos do produto',field('main_photo','Foto principal — tirar foto ou escolher arquivo','','file','accept="image/jpeg,image/png,image/webp" capture="environment"')+[1,2,3,4,5].map(i=>field('photo'+i,'Foto adicional '+i,'','file','accept="image/jpeg,image/png,image/webp"')).join('')+(p.image_url?`<p class="mp-muted">Foto principal atual preservada até escolher outra.</p>`:'')+(p.images?.length?`<p class="mp-muted">Fotos adicionais atuais preservadas até escolher novas.</p>`:''))}
- ${section('Informações básicas',field('name','Nome completo',p.name||'','text','required maxlength="150"')+field('ean','Código de barras / QR Code',p.ean||'')+`<button type="button" class="mp-btn outline mp-full" data-action="scan-product-code" data-scan-mode="qr">${icon('qr_code_scanner')} Ler QR Code</button><button type="button" class="mp-btn outline mp-full" data-action="scan-product-code" data-scan-mode="barcode">${icon('barcode')} Ler código de barras (EAN/UPC)</button><p class="mp-muted">Aponte para o QR Code ou código de barras. Também é possível digitar o código manualmente.</p>`+field('sku','SKU',p.sku||'')+field('brand','Marca',p.brand||'')+select('category','Categoria',[['Pet Shops','Pet Shops'],['Farmácia','Farmácia'],['Rações','Rações'],['Brinquedos','Brinquedos'],['Higiene','Higiene'],['Acessórios','Acessórios']],p.category||'Pet Shops'))}
+ ${section('Informações básicas',field('name','Nome completo',p.name||'','text','required maxlength="150"')+field('ean','Código de barras / QR Code',p.ean||'')+`<button type="button" class="mp-btn outline mp-full" data-action="scan-product-code" data-scan-mode="qr">${icon('qr_code_scanner')} Ler QR Code</button><button type="button" class="mp-btn outline mp-full" data-action="scan-product-code" data-scan-mode="barcode">${icon('barcode')} Ler código de barras (EAN/UPC)</button><button type="button" class="mp-btn outline mp-full" data-action="lookup-product-code">Buscar produto pelo código digitado</button><p class="mp-muted">Aponte para o QR Code ou código de barras. Também é possível digitar o código manualmente.</p>`+field('sku','SKU',p.sku||'')+field('brand','Marca',p.brand||'')+select('category','Categoria',[['Pet Shops','Pet Shops'],['Farmácia','Farmácia'],['Rações','Rações'],['Brinquedos','Brinquedos'],['Higiene','Higiene'],['Acessórios','Acessórios']],p.category||'Pet Shops'))}
  ${section('Preço e disponibilidade',field('price','Preço de venda (R$)',price(p.price_cents),'number','required min="0.01" step="0.01"')+field('old_price','Preço anterior (R$)',price(p.old_price_cents),'number','min="0" step="0.01"')+checked('active','Produto ativo',p.active!==false))}
  ${section('Estoque e logística',field('stock','Estoque atual',p.stock??0,'number','required min="0" step="1"')+field('min_stock','Alerta mínimo',p.min_stock??5,'number','min="0" step="1"')+field('batch_code','Lote',p.batch_code||'')+field('expiry_date','Validade',p.expiry_date||'','date')+checked('auto_stock','Baixa automática',p.auto_stock!==false)+checked('pickup_enabled','Retirada na loja',p.pickup_enabled!==false)+checked('delivery_enabled','Entrega',p.delivery_enabled!==false))}
- ${section('Dimensões',field('weight_kg','Peso (kg)',p.weight_kg||'','number','min="0" step="0.01"')+field('height_cm','Altura (cm)',p.height_cm||'','number','min="0" step="0.1"')+field('width_cm','Largura (cm)',p.width_cm||'','number','min="0" step="0.1"')+field('depth_cm','Profundidade (cm)',p.depth_cm||'','number','min="0" step="0.1"'))}
+ ${section('Dimensões',field('weight_kg','Peso (kg) — produtos sólidos',p.weight_kg??'','number','min="0" step="0.01"')+field('volume_ml','Volume (mL) — produtos líquidos',p.volume_ml??'','number','min="0" step="0.01"')+field('height_cm','Altura (cm)',p.height_cm||'','number','min="0" step="0.1"')+field('width_cm','Largura (cm)',p.width_cm||'','number','min="0" step="0.1"')+field('depth_cm','Profundidade (cm)',p.depth_cm||'','number','min="0" step="0.1"'))}
  ${section('Descrição e cuidados',textarea('description','Descrição e modo de usar',p.description||'')+checked('requires_prescription','Exige receita veterinária',p.requires_prescription===true))}
  <button class="mp-btn mp-full" type="submit">Salvar alterações</button></form>`);
 }
@@ -99,6 +99,31 @@ function stopProductScan(){
  if(productScanStream){productScanStream.getTracks().forEach(track=>track.stop());productScanStream=null;}
  document.getElementById('mp-product-scan-view')?.remove();
 }
+async function lookupProductBarcode(raw){
+ const form=document.getElementById('mp-product-form');
+ if(!form)return;
+ const code=String(raw||'').trim();
+ if(!/^\\d{8,14}$/.test(code)){toast('Código lido. Busca automática disponível para códigos EAN/UPC numéricos.');return;}
+ const set=(name,value)=>{const field=form.elements.namedItem(name);if(field&&value!=null&&String(value).trim()&&!field.value.trim()){field.value=String(value).trim();return true;}return false;};
+ try{
+  const response=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code)+'.json?fields=product_name,product_name_pt,brands,quantity,product_quantity,product_quantity_unit,generic_name,image_url',{headers:{Accept:'application/json'}});
+  if(!response.ok)throw new Error('Serviço de catálogo indisponível');
+  const data=await response.json();
+  if(data.status!==1||!data.product){toast('Código registrado. Produto não encontrado no catálogo público; complete os dados manualmente.');return;}
+  const p=data.product;
+  let count=0;
+  count+=Number(set('name',p.product_name_pt||p.product_name));
+  count+=Number(set('brand',p.brands?.split(',')[0]));
+  count+=Number(set('description',p.generic_name));
+  const quantity=String(p.quantity||'');
+  const ml=quantity.match(/(\\d+(?:[.,]\\d+)?)\\s*(ml|l)\\b/i);
+  const volume=ml?Number(ml[1].replace(',','.'))*(ml[2].toLowerCase()==='l'?1000:1):null;
+  count+=Number(set('volume_ml',volume||((p.product_quantity_unit||'').toLowerCase()==='ml'?p.product_quantity:null)));
+  const kg=quantity.match(/(\\d+(?:[.,]\\d+)?)\\s*(kg|g)\\b/i);
+  count+=Number(set('weight_kg',kg?Number(kg[1].replace(',','.'))*(kg[2].toLowerCase()==='g'?.001:1):null));
+  toast(count?'Dados encontrados e preenchidos. Confira as informações antes de salvar.':'Produto localizado. Confira e complete os campos manualmente.');
+ }catch(error){toast('Não foi possível consultar o catálogo agora. Você pode preencher os dados manualmente.',true);}
+}
 async function scanProductCode(el){
  const form=document.getElementById('mp-product-form');
  if(!form)throw new Error('Abra o cadastro de produto primeiro.');
@@ -123,7 +148,8 @@ async function scanProductCode(el){
    try{const found=await detector.detect(video);if(found.length){
     const value=found[0].rawValue;
     form.elements.namedItem('ean').value=value;
-    stopProductScan();toast('Código identificado e preenchido.');
+    stopProductScan();toast('Código identificado. Buscando dados do produto...');
+    await lookupProductBarcode(value);
    }}catch(e){/* continue scanning */}finally{busy=false;}
   },350);
  }catch(error){stopProductScan();throw new Error('Não foi possível acessar a câmera. Confira a permissão do navegador.');}
@@ -131,6 +157,7 @@ async function scanProductCode(el){
 document.addEventListener('click',event=>{if(event.target.closest('[data-action="close-modal"]'))stopProductScan();});
 const actions={
  'scan-product-code':scanProductCode,
+ 'lookup-product-code':el=>lookupProductBarcode(document.getElementById('mp-product-form')?.elements.namedItem('ean')?.value),
  'stop-product-scan':stopProductScan,
  home:()=>{location.href=route.home;},account:accountModal,login:()=>authModal(),signup:()=>authModal('signup'),recover:()=>authModal('recover'),'close-modal':closeModal,
  logout:async()=>{await result(db.auth.signOut());state.user=null;await loadUser();closeModal();await render();toast('Você saiu da conta.');},
@@ -235,7 +262,7 @@ const forms={
   const cents=value=>value===''||value==null?null:Math.round(Number(value)*100);
   const numeric=value=>value===''||value==null?null:Number(value);
   const on=name=>form.elements.namedItem(name)?.checked===true;
-  const payload={store_id:form.dataset.store,name:v.name.trim(),category:v.category,price_cents:cents(v.price),old_price_cents:cents(v.old_price),stock:Number(v.stock),min_stock:Number(v.min_stock||0),image_url:main||original.image_url||'',images:photos,ean:v.ean.trim(),sku:v.sku.trim(),brand:v.brand.trim(),description:v.description.trim(),batch_code:v.batch_code.trim(),expiry_date:v.expiry_date||null,weight_kg:numeric(v.weight_kg),height_cm:numeric(v.height_cm),width_cm:numeric(v.width_cm),depth_cm:numeric(v.depth_cm),active:on('active'),auto_stock:on('auto_stock'),pickup_enabled:on('pickup_enabled'),delivery_enabled:on('delivery_enabled'),requires_prescription:on('requires_prescription')};
+  const payload={store_id:form.dataset.store,name:v.name.trim(),category:v.category,price_cents:cents(v.price),old_price_cents:cents(v.old_price),stock:Number(v.stock),min_stock:Number(v.min_stock||0),image_url:main||original.image_url||'',images:photos,ean:v.ean.trim(),sku:v.sku.trim(),brand:v.brand.trim(),description:v.description.trim(),batch_code:v.batch_code.trim(),expiry_date:v.expiry_date||null,weight_kg:numeric(v.weight_kg),volume_ml:numeric(v.volume_ml),height_cm:numeric(v.height_cm),width_cm:numeric(v.width_cm),depth_cm:numeric(v.depth_cm),active:on('active'),auto_stock:on('auto_stock'),pickup_enabled:on('pickup_enabled'),delivery_enabled:on('delivery_enabled'),requires_prescription:on('requires_prescription')};
   if(!payload.name||!Number.isFinite(payload.price_cents)||payload.price_cents<1)throw new Error('Informe nome e preço válido.');
   const admin=state.roles.includes('admin');
   if(!admin){payload.approval_status='pending';payload.active=false;payload.submitted_by=state.user.id;}
