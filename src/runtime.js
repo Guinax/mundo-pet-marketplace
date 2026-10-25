@@ -173,9 +173,15 @@ const forms={
   closeModal();await render();toast('Loja cadastrada.');
  },
  'mp-product-form':async(form,v)=>{
-  if(v.image_url&&!v.image_url.startsWith('https://'))throw new Error('Use uma URL de imagem com HTTPS.');
-  const payload={store_id:form.dataset.store,name:v.name.trim(),category:v.category,price_cents:Math.round(Number(v.price)*100),stock:Number(v.stock),image_url:v.image_url.trim()};
-  await result(form.dataset.id?db.from('mp_products').update(payload).eq('id',form.dataset.id):db.from('mp_products').insert(payload));await refresh();toast('Produto e estoque salvos.');
+  const photos=[1,2,3,4,5].map(i=>v['photo'+i]?.trim()).filter(Boolean);
+  if([v.image_url,...photos].some(url=>url&&!url.startsWith('https://')))throw new Error('Use links HTTPS nas fotos.');
+  const cents=value=>value===''||value==null?null:Math.round(Number(value)*100);
+  const numeric=value=>value===''||value==null?null:Number(value);
+  const on=name=>form.elements.namedItem(name)?.checked===true;
+  const payload={store_id:form.dataset.store,name:v.name.trim(),category:v.category,price_cents:cents(v.price),old_price_cents:cents(v.old_price),stock:Number(v.stock),min_stock:Number(v.min_stock||0),image_url:v.image_url.trim(),images:photos,ean:v.ean.trim(),sku:v.sku.trim(),brand:v.brand.trim(),description:v.description.trim(),batch_code:v.batch_code.trim(),expiry_date:v.expiry_date||null,weight_kg:numeric(v.weight_kg),height_cm:numeric(v.height_cm),width_cm:numeric(v.width_cm),depth_cm:numeric(v.depth_cm),active:on('active'),auto_stock:on('auto_stock'),pickup_enabled:on('pickup_enabled'),delivery_enabled:on('delivery_enabled'),requires_prescription:on('requires_prescription')};
+  if(!payload.name||!Number.isFinite(payload.price_cents)||payload.price_cents<1)throw new Error('Informe nome e preço válido.');
+  await result(form.dataset.id?db.from('mp_products').update(payload).eq('id',form.dataset.id):db.from('mp_products').insert(payload));
+  closeModal();await refresh();toast('Produto salvo no catálogo.');
  },
  'mp-store-form':async(form,v)=>{await result(db.from('mp_stores').update({name:v.name.trim(),address:v.address.trim(),phone:v.phone.trim()}).eq('id',form.dataset.id));await refresh();toast('Perfil da loja salvo.');},
  'mp-service-form':async(form,v)=>{if(v.image_url&&!v.image_url.startsWith('https://'))throw new Error('Use uma imagem com HTTPS.');const payload={provider_id:state.user.id,name:v.name.trim(),provider_name:v.provider_name.trim(),category:v.category,price_cents:Math.round(Number(v.price)*100),duration_minutes:Number(v.duration),image_url:v.image_url.trim()};await result(form.dataset.id?db.from('mp_services').update(payload).eq('id',form.dataset.id):db.from('mp_services').insert({...payload,active:false}));await refresh();toast('Serviço salvo.');},
