@@ -43,10 +43,40 @@ function applicationModal(role='store') {
  if(!requireLogin())return;
  modal('Credenciamento Mundo Pet',`<form id="mp-application-form" class="mp-stack">${select('role','Quero me cadastrar como',[['store','Pet shop / lojista'],['vet','Veterinário'],['courier','Entregador']],role)}${field('name','Nome profissional ou da loja',state.profile?.full_name,'text','required maxlength="120"')}${field('registration','CNPJ / CRMV / documento profissional','','text','required maxlength="60"')}${field('address','Endereço de atuação','','text','required maxlength="250"')}${field('phone','Telefone de contato',state.profile?.phone,'tel','required maxlength="25"')}<p class="mp-muted">O administrador analisará seus dados antes de habilitar o painel. O envio não garante aprovação.</p><button type="submit" class="mp-btn">Enviar solicitação</button></form>`);
 }
-async function productModal(id,storeId) {
+async async function productModal(id,storeId) {
  if(!requireLogin())return;
  const p=id?await result(db.from('mp_products').select('*').eq('id',id).single()):{};
- modal(id?'Editar produto e estoque':'Novo produto',`<form id="mp-product-form" class="mp-stack" data-id="${esc(id||'')}" data-store="${esc(storeId)}">${field('name','Nome do produto',p.name,'text','required maxlength="150"')}${select('category','Categoria',[['Pet Shops','Pet Shops'],['Farmácia','Farmácia']],p.category||'Pet Shops')}<div class="mp-grid">${field('price','Preço (R$)',p.price_cents?(p.price_cents/100).toFixed(2):'','number','required min="0.01" max="100000" step="0.01"')}${field('stock','Estoque',p.stock??0,'number','required min="0" max="999999" step="1"')}</div>${field('image_url','URL da foto (HTTPS)',p.image_url,'url','required placeholder="https://..."')}<p class="mp-muted">Use uma imagem que você tenha autorização para publicar.</p><button class="mp-btn" type="submit">Salvar produto</button></form>`);
+ const x=p.details||{};
+ const checked=k=>x[k]?'checked':'';
+ const yesno=(k,label)=>`<label class="mp-check"><input type="checkbox" name="${k}" ${checked(k)}> ${label}</label>`;
+ modal(id?'Editar produto':'Cadastrar produto',`<form id="mp-product-form" class="mp-stack" data-id="${esc(id||'')}" data-store="${esc(storeId||p.store_id||'')}">
+ <div class="mp-row mp-between"><strong>Fotos do produto</strong><span class="mp-muted">Imagem principal HTTPS</span></div>
+ ${p.image_url?`<img src="${esc(p.image_url)}" alt="Imagem atual do produto" style="max-height:200px;object-fit:contain;border-radius:12px">`:''}
+ ${field('image_url','URL da foto principal',p.image_url,'url','required placeholder="https://..."')}
+ ${field('image_2','Segunda foto (URL HTTPS)',x.image_2,'url','placeholder="https://..."')}
+ ${field('image_3','Terceira foto (URL HTTPS)',x.image_3,'url','placeholder="https://..."')}
+ <h3>Informações básicas</h3>
+ ${field('name','Nome completo do produto',p.name,'text','required maxlength="150"')}
+ <div class="mp-grid">${select('category','Categoria',[['Pet Shops','Pet Shops'],['Farmácia','Farmácia']],p.category||'Pet Shops')}${field('barcode','Código de barras (EAN/GTIN)',x.barcode,'text','maxlength="20" inputmode="numeric"')}</div>
+ <div class="mp-grid">${field('sku','SKU da loja',x.sku,'text','maxlength="60"')}${field('brand','Marca / fabricante',x.brand,'text','maxlength="100"')}</div>
+ ${field('classification','Classificação do catálogo',x.classification,'text','maxlength="120"')}
+ <h3>Preço e repasse</h3>
+ <div class="mp-grid">${field('price','Preço de venda (R$)',p.price_cents?(p.price_cents/100).toFixed(2):'','number','required min="0.01" max="100000" step="0.01"')}${field('compare_price','Preço anterior (R$)',x.compare_price??'','number','min="0" step="0.01"')}</div>
+ <p class="mp-muted">O recebimento líquido depende das taxas e regras reais da plataforma. Nenhum repasse automático é prometido por esta tela.</p>
+ <h3>Estoque e logística da loja</h3>
+ <div class="mp-grid">${field('stock','Estoque físico atual',p.stock??0,'number','required min="0" max="999999" step="1"')}${field('min_stock','Alerta de estoque mínimo',x.min_stock??5,'number','min="0" step="1"')}</div>
+ <div class="mp-grid">${field('batch','Identificador do lote',x.batch,'text','maxlength="80"')}${field('expiry','Validade do lote',x.expiry,'date')}</div>
+ ${yesno('auto_decrement','Baixa automática do estoque após venda')}
+ ${yesno('pickup','Permitir retirada em loja')}
+ ${yesno('delivery','Disponível para entrega')}
+ <h3>Dimensões e envio</h3>
+ ${field('weight','Peso bruto embalado (kg)',x.weight,'number','min="0" step="0.001"')}
+ <div class="mp-grid">${field('length','Altura (cm)',x.length,'number','min="0" step="0.1"')}${field('width','Largura (cm)',x.width,'number','min="0" step="0.1"')}${field('depth','Profundidade (cm)',x.depth,'number','min="0" step="0.1"')}</div>
+ <h3>Descrição e modo de usar</h3>
+ ${textarea('description','Descrição nutricional e benefícios',x.description,'maxlength="5000"')}
+ ${yesno('prescription','Exige receita veterinária')}
+ <button class="mp-btn mp-full" type="submit">Salvar alterações</button>
+ </form>`);
 }
 async function orderDetails(id) {
  if(!requireLogin())return;
@@ -145,9 +175,15 @@ const forms={
  },
  'mp-application-form':async(form,v)=>{await result(db.from('mp_applications').insert({user_id:state.user.id,role:v.role,name:v.name.trim(),registration:v.registration.trim(),address:v.address.trim(),phone:v.phone.trim()}));closeModal();await render();toast('Solicitação enviada para análise.');},
  'mp-product-form':async(form,v)=>{
-  if(v.image_url&&!v.image_url.startsWith('https://'))throw new Error('Use uma URL de imagem com HTTPS.');
-  const payload={store_id:form.dataset.store,name:v.name.trim(),category:v.category,price_cents:Math.round(Number(v.price)*100),stock:Number(v.stock),image_url:v.image_url.trim()};
-  await result(form.dataset.id?db.from('mp_products').update(payload).eq('id',form.dataset.id):db.from('mp_products').insert(payload));await refresh();toast('Produto e estoque salvos.');
+  for(const key of ['image_url','image_2','image_3'])if(v[key]&&!v[key].startsWith('https://'))throw new Error('As imagens devem usar URL HTTPS.');
+  if(Number(v.compare_price||0)>0&&Number(v.compare_price)<Number(v.price))throw new Error('O preço anterior deve ser maior que o preço de venda.');
+  const detailKeys=['image_2','image_3','barcode','sku','brand','classification','compare_price','min_stock','batch','expiry','weight','length','width','depth','description'];
+  const details=Object.fromEntries(detailKeys.map(k=>[k,v[k]??'']));
+  for(const key of ['auto_decrement','pickup','delivery','prescription'])details[key]=!!form.elements.namedItem(key)?.checked;
+  const payload={store_id:form.dataset.store,name:v.name.trim(),category:v.category,price_cents:Math.round(Number(v.price)*100),stock:Number(v.stock),image_url:v.image_url.trim(),details};
+  if(!payload.store_id)throw new Error('Loja não identificada.');
+  await result(form.dataset.id?db.from('mp_products').update(payload).eq('id',form.dataset.id):db.from('mp_products').insert(payload));
+  await refresh();toast('Produto salvo com sucesso.');
  },
  'mp-store-form':async(form,v)=>{await result(db.from('mp_stores').update({name:v.name.trim(),address:v.address.trim(),phone:v.phone.trim()}).eq('id',form.dataset.id));await refresh();toast('Perfil da loja salvo.');},
  'mp-service-form':async(form,v)=>{if(v.image_url&&!v.image_url.startsWith('https://'))throw new Error('Use uma imagem com HTTPS.');const payload={provider_id:state.user.id,name:v.name.trim(),provider_name:v.provider_name.trim(),category:v.category,price_cents:Math.round(Number(v.price)*100),duration_minutes:Number(v.duration),image_url:v.image_url.trim()};await result(form.dataset.id?db.from('mp_services').update(payload).eq('id',form.dataset.id):db.from('mp_services').insert({...payload,active:false}));await refresh();toast('Serviço salvo.');},
