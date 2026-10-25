@@ -18,6 +18,7 @@ function friendly(error) {
  const message=error?.message||String(error);
  if(/Invalid login credentials/i.test(message))return 'Não foi possível entrar com este e-mail e senha. Se você acabou de confirmar o cadastro, tente recuperar a senha.';
  if(/Email not confirmed/i.test(message))return 'Confirme o e-mail no link recebido antes de entrar.';
+ if(/mp_profiles_cpf_digits_unique|duplicate key.*cpf|23505.*cpf/i.test(message))return 'Este CPF já está vinculado a outra conta. Entre na conta existente ou solicite suporte.';
  if(/User already registered/i.test(message))return 'Esse e-mail já tem uma conta. Use a opção Entrar.';
  if(/rate limit|too many requests/i.test(message))return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
  if(/Failed to fetch|NetworkError|timeout/i.test(message))return 'Falha de conexão. Verifique sua internet e tente novamente.';
