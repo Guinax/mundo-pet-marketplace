@@ -14,12 +14,12 @@ async function updateDeliveryQuote(){
  const key=deliveryFingerprint(),seq=++deliverySeq;deliveryQuote=null;deliveryQuoteKey='';
  const retry=document.getElementById('mp-retry-shipping');if(retry)retry.hidden=true;
  if(actions)actions.querySelectorAll('button').forEach(b=>b.disabled=true);
- if(value)value.textContent='Calculando…';if(grand)grand.textContent='Calculando…';
+ if(value)value.textContent='Calculando…';if(grand)grand.textContent='Aguardando frete';const paymentState=document.getElementById('mp-payment-state');if(paymentState)paymentState.textContent='Calculando frete para habilitar o pagamento…';
  const items=cart(),a=state.profile?.address||{};
- if(!state.user||!a.street||!a.number||!a.city||!a.state){status.textContent='Entre na conta e complete seu endereço para calcular o frete automaticamente.';if(value)value.textContent='Endereço pendente';return;}
+ if(!state.user||!a.street||!a.number||!a.city||!a.state){status.textContent='Entre na conta e complete seu endereço para calcular o frete automaticamente.';if(value)value.textContent='Endereço pendente';if(grand)grand.textContent='Complete seu endereço';if(paymentState)paymentState.textContent='Pagamento aguardando endereço completo.';return;}
  if(!items.length)return;
  const stores=[...new Set(items.map(i=>state.products.find(p=>p.id===i.product_id)?.store_id))];
- if(stores.length!==1||!stores[0]){status.textContent='Para finalizar, selecione produtos de uma única loja.';if(value)value.textContent='Indisponível';return;}
+ if(stores.length!==1||!stores[0]){status.textContent='Para finalizar, selecione produtos de uma única loja.';if(value)value.textContent='Indisponível';if(grand)grand.textContent='Frete indisponível';if(paymentState)paymentState.textContent='Pagamento bloqueado: produtos devem ser da mesma loja.';return;}
  status.textContent='Calculando automaticamente a rota até seu endereço…';
  try{
  const {data,error}=await db.functions.invoke('mp-delivery-quote',{body:{store_id:stores[0]}});
@@ -30,8 +30,9 @@ async function updateDeliveryQuote(){
  status.textContent='Frete calculado automaticamente • '+(data.distance_m/1000).toFixed(2).replace('.',',')+' km';
  if(value)value.textContent=money(data.delivery_cents);
  if(grand)grand.textContent=money(subtotal+data.delivery_cents);
+ if(paymentState)paymentState.textContent='Frete calculado. Escolha Pix ou cartão para finalizar na InfinitePay.';
  if(actions)actions.querySelectorAll('button').forEach(b=>b.disabled=false);
- }catch(err){if(seq!==deliverySeq)return;status.textContent=err?.message||'Frete indisponível. Confira o endereço completo de entrega e da loja.';if(value)value.textContent='Indisponível';const retry=document.getElementById('mp-retry-shipping');if(retry)retry.hidden=false;}
+ }catch(err){if(seq!==deliverySeq)return;status.textContent=err?.message||'Frete indisponível. Confira o endereço completo de entrega e da loja.';if(value)value.textContent='Indisponível';if(grand)grand.textContent='Não disponível';if(paymentState)paymentState.textContent='Pagamento temporariamente bloqueado: não foi possível confirmar o frete. Nenhuma cobrança foi criada.';const retry=document.getElementById('mp-retry-shipping');if(retry)retry.hidden=false;}
 }
 
 const renderers={home,tutor,booking,cart:checkout,store:storePage,vet:vetPage,courier:courierPage,admin:adminPage,hotel:()=>specialtyPage('hotel'),walkers:()=>specialtyPage('walkers'),pharmacy:()=>specialtyPage('pharmacy')};
