@@ -114,6 +114,7 @@ const actions={
  'toggle-store':async el=>{const s=state.stores.find(s=>s.id===el.dataset.id);await result(db.from('mp_stores').update({is_open:!s.is_open}).eq('id',s.id));await refresh();toast('Disponibilidade da loja atualizada.');},
  'store-filter':el=>{document.querySelectorAll('[data-order-status]').forEach(n=>n.hidden=el.dataset.filter!=='all'&&n.dataset.orderStatus!==el.dataset.filter);},
  'review-product':async el=>{if(!state.roles.includes('admin'))throw new Error('Acesso restrito.');await result(db.from('mp_products').update({approval_status:el.dataset.status,active:el.dataset.status==='approved'}).eq('id',el.dataset.id));await refresh();toast('Solicitação de produto analisada.');},
+ 'adopt-catalog':el=>{modal('Adicionar produto à loja',`<form id="mp-adopt-catalog-form" data-id="${esc(el.dataset.id)}" data-store="${esc(el.dataset.store)}" class="mp-stack">${field('price','Seu preço de venda (R$)','','number','required min="0.01" step="0.01"')}${field('stock','Quantidade em estoque',0,'number','required min="0" step="1"')}<button class="mp-btn" type="submit">Adicionar produto</button></form>`);},
  'admin-new-product':()=>adminNewProduct(),
  'admin-new-store':()=>adminNewStore(),
  'admin-pick-store':el=>productModal('',el.dataset.id),
@@ -174,6 +175,7 @@ const forms={
   await result(db.from('mp_stores').insert({owner_id:state.user.id,name:v.name.trim(),address:v.address.trim(),phone:v.phone.trim(),is_open:true}));
   closeModal();await render();toast('Loja cadastrada.');
  },
+ 'mp-adopt-catalog-form':async(form,v)=>{const price=Math.round(Number(v.price)*100);const stock=Number(v.stock);if(!Number.isSafeInteger(price)||price<1||!Number.isInteger(stock)||stock<0)throw new Error('Informe preço e estoque válidos.');await result(db.rpc('mp_adopt_catalog_product',{p_source:form.dataset.id,p_store:form.dataset.store,p_price:price,p_stock:stock}));closeModal();await refresh();toast('Produto adicionado à sua loja.');},
  'mp-product-form':async(form,v)=>{
   const photos=[1,2,3,4,5].map(i=>v['photo'+i]?.trim()).filter(Boolean);
   if([v.image_url,...photos].some(url=>url&&!url.startsWith('https://')))throw new Error('Use links HTTPS nas fotos.');
