@@ -161,10 +161,15 @@ document.addEventListener('change',event=>{
  if(event.target.closest('#mp-booking-form')){const form=document.getElementById('mp-booking-form');const v=formObject(form);const price=state.services.find(s=>s.id===v.service)?.price_cents||0;const total=document.getElementById('mp-booking-total');if(total)total.textContent=money(price+({home:3000,taxi:4000}[v.mode]||0));}
 });
 
-shell(page,`<div class="mp-empty" role="status">Carregando Mundo Pet…</div>`);
+// Render the approved storefront immediately. Network requests must never block the Home.
+const withDeadline=(operation,ms=9000)=>Promise.race([
+ Promise.resolve().then(operation),
+ new Promise((_,reject)=>setTimeout(()=>reject(new Error('Tempo limite de conexão excedido. Confira a conexão e tente novamente.')),ms))
+]);
 async function init(){
- const {data:{session},error}=await db.auth.getSession();if(error)throw error;state.user=session?.user||null;
- await Promise.all([loadPublic(),loadUser()]);await render();
+ await render();
+ const {data:{session},error}=await withDeadline(()=>db.auth.getSession());if(error)throw error;state.user=session?.user||null;
+ await withDeadline(()=>Promise.all([loadPublic(),loadUser()]));await render();
  const authParams=new URLSearchParams(location.search);
  if(authParams.has('recovery')&&state.user)newPasswordModal();
  else if(authParams.has('login')){if(!state.user)authModal();else toast('E-mail confirmado. Sua conta está conectada.');}
@@ -177,7 +182,14 @@ db.auth.onAuthStateChange((event,session)=>{
  if(event==='SIGNED_OUT'){state.user=null;setTimeout(()=>{loadUser().then(render);},0);}
  if(event==='SIGNED_IN'&&!state.user&&!openingAccount){state.user=session?.user||null;setTimeout(()=>{loadUser().then(render);},0);}
 });
-init().catch(error=>{shell(page,`<div class="mp-runtime-error"><strong>Falha ao conectar ao Mundo Pet</strong><p>${esc(friendly(error))}</p>${btn('Tentar novamente','refresh')}</div>`);});
+init().catch(async error=>{
+ // Preserve the public storefront, even if auth or the database is unavailable.
+ if(page==='home'){
+  await render();
+  const target=document.querySelector('.mp-body');
+  if(target)target.insertAdjacentHTML('afterbegin',`<div class="mp-runtime-error" role="alert"><strong>Não foi possível atualizar os dados agora.</strong><p>${esc(friendly(error))}</p><button class="mp-btn outline small" type="button" onclick="location.reload()">Tentar novamente</button></div>`);
+ }else shell(page,`<div class="mp-runtime-error"><strong>Falha ao conectar ao Mundo Pet</strong><p>${esc(friendly(error))}</p><button class="mp-btn outline" type="button" onclick="location.reload()">Tentar novamente</button></div>`);
+});
 // Poll operational pages without replacing a form or interrupting ongoing typing.
 if(['store','vet','courier','admin'].includes(page))setInterval(()=>{
  if(!state.user||document.hidden||document.querySelector('[role="dialog"]')||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;
