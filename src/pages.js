@@ -110,6 +110,22 @@ export async function courierPage() {
 export async function adminPage() {
  const blocked=gate('admin');if(blocked)return blocked;
  const tab=new URLSearchParams(location.search).get('tab');
+ if(tab==='finance'||tab==='payouts'){
+  const [wallets,entries,stores]=await Promise.all([
+   result(db.from('mp_wallets').select('*').order('created_at',{ascending:false})),
+   result(db.from('mp_wallet_entries').select('*').order('created_at',{ascending:false}).limit(1000)),
+   result(db.from('mp_stores').select('id,name,owner_id'))
+  ]);
+  const kinds=[['store','Lojistas / lojas'],['courier','Motoqueiros / entregadores'],['vet','Veterinários']];
+  const walletCard=w=>{
+   const movements=entries.filter(e=>e.wallet_id===w.id);
+   const balance=movements.reduce((sum,e)=>sum+Number(e.amount_cents||0),0);
+   const store=stores.find(t=>t.id===w.store_id);
+   const name=w.wallet_type==='store'?(store?.name||'Loja sem nome'):(w.wallet_type==='courier'?'Entregador':'Veterinário');
+   return `<article class="mp-card"><div class="mp-row mp-between"><strong>${esc(name)}</strong>${badge('Carteira individual')}</div><p class="mp-muted">ID: ${esc(w.id.slice(0,8))} • Responsável: ${esc(w.owner_id.slice(0,8))}</p><h3>${money(balance)}</h3><p class="mp-muted">Saldo contábil registrado • Não é saldo Pix confirmado</p>${movements.slice(0,10).map(e=>`<div class="mp-labelprice"><span>${esc(e.entry_type)} • ${dateTime(e.created_at)}</span><strong>${money(e.amount_cents)}</strong></div>`).join('')||'<p class="mp-muted">Sem lançamentos conciliados.</p>'}</article>`;
+  };
+  return `<div class="mp-banner"><strong>${icon('account_balance_wallet')} Financeiro e repasses</strong><p>Carteiras separadas por parceiro. Nenhum pagamento Pix é executado nesta tela.</p></div><div class="mp-grid">${kinds.map(([kind,title])=>kpi(title,wallets.filter(w=>w.wallet_type===kind).length,'account_balance_wallet')).join('')}</div>${kinds.map(([kind,title])=>`<section><h2 class="mp-section-title">Repasses de ${title}</h2><div class="mp-stack">${wallets.filter(w=>w.wallet_type===kind).map(walletCard).join('')||empty('Nenhuma carteira cadastrada')}</div></section>`).join('')}<p class="mp-muted">Saques e repasses D+1 serão habilitados somente após conciliação, regras de comissão e integração com o provedor financeiro.</p>`;
+ }
  if(tab==='products'){
   const [stores,products]=await Promise.all([
    result(db.from('mp_stores').select('*').order('name')),
