@@ -20,7 +20,7 @@ export function shell(page,body,subtitle='') {
 }
 function nav(page) {
  const count=cart().reduce((n,i)=>n+i.quantity,0);
- let items=[['home','home','Início'],['home','search','Explorar','?explore=1'],['cart','receipt_long','Pedidos'],['home','favorite','Favoritos','?favorites=1'],['tutor','person','Perfil']];
+ let items=[['home','home','Início'],['home','search','Explorar','?explore=1'],['cart','shopping_cart','Carrinho / Pagar'],['home','favorite','Favoritos','?favorites=1'],['tutor','person','Perfil']];
  if(page==='store')items=[['store','dashboard','Visão geral'],['store','receipt_long','Pedidos','?tab=orders'],['store','inventory_2','Catálogo','?tab=products'],['store','account_balance_wallet','Finanças','?tab=finance'],['tutor','person','Perfil']];
  if(page==='vet')items=[['vet','calendar_month','Agenda'],['vet','folder_shared','Pacientes','?tab=patients'],['vet','clinical_notes','Anotações','?tab=notes'],['vet','payments','Repasses','?tab=finance'],['tutor','person','Perfil']];
  if(page==='courier')items=[['courier','two_wheeler','Corridas'],['courier','route','Entregas','?tab=deliveries'],['courier','history','Histórico','?tab=history'],['courier','account_balance_wallet','Carteira','?tab=finance'],['tutor','person','Perfil']];
