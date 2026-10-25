@@ -43,7 +43,7 @@ function applicationModal(role='store') {
  if(!requireLogin())return;
  modal('Credenciamento Mundo Pet',`<form id="mp-application-form" class="mp-stack">${select('role','Quero me cadastrar como',[['store','Pet shop / lojista'],['vet','Veterinário'],['courier','Entregador']],role)}${field('name','Nome profissional ou da loja',state.profile?.full_name,'text','required maxlength="120"')}${field('registration','CNPJ / CRMV / documento profissional','','text','required maxlength="60"')}${field('address','Endereço de atuação','','text','required maxlength="250"')}${field('phone','Telefone de contato',state.profile?.phone,'tel','required maxlength="25"')}<p class="mp-muted">O administrador analisará seus dados antes de habilitar o painel. O envio não garante aprovação.</p><button type="submit" class="mp-btn">Enviar solicitação</button></form>`);
 }
-async async function productModal(id,storeId) {
+async function productModal(id,storeId) {
  if(!requireLogin())return;
  const p=id?await result(db.from('mp_products').select('*').eq('id',id).single()):{};
  const x=p.details||{};
