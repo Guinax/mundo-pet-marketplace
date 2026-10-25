@@ -42,7 +42,7 @@ function accountModal() {
 }
 function applicationModal(role='store') {
  if(!requireLogin())return;
- modal('Credenciamento Mundo Pet',`<form id="mp-application-form" class="mp-stack">${select('role','Quero me cadastrar como',[['store','Pet shop / lojista'],['vet','Veterinário'],['courier','Entregador']],role)}${field('name','Nome profissional ou da loja',state.profile?.full_name,'text','required maxlength="120"')}${field('registration','CNPJ / CRMV / documento profissional','','text','required maxlength="60"')}${field('address','Endereço de atuação','','text','required maxlength="250"')}${field('phone','Telefone de contato',state.profile?.phone,'tel','required maxlength="25"')}<p class="mp-muted">O administrador analisará seus dados antes de habilitar o painel. O envio não garante aprovação.</p><button type="submit" class="mp-btn">Enviar solicitação</button></form>`);
+ modal('Credenciamento Mundo Pet',`<form id="mp-application-form" class="mp-stack">${select('service_type','Quero me cadastrar como',[['pet_shop','Pet shop / lojista'],['dog_walker','Dog Walker — passeador de cães'],['hotel','Hotel e hospedagem pet'],['daycare','Creche pet'],['grooming','Banho e tosa'],['pharmacy','Farmácia pet'],['veterinary','Veterinário / clínica'],['trainer','Adestrador'],['pet_sitter','Cuidador / Pet Sitter'],['pet_taxi','Transporte pet / Táxi Dog'],['courier','Entregador']],role==='vet'?'veterinary':role==='courier'?'courier':'pet_shop')}${field('name','Nome profissional ou da loja',state.profile?.full_name,'text','required maxlength="120"')}${field('registration','CNPJ / CRMV / CPF ou documento profissional','','text','required maxlength="60"')}${field('address','Endereço de atuação','','text','required maxlength="250"')}${field('phone','Telefone de contato',state.profile?.phone,'tel','required maxlength="25"')}<p class="mp-muted">O administrador analisará seus dados antes de habilitar o painel. O envio não garante aprovação.</p><button type="submit" class="mp-btn">Enviar solicitação</button></form>`);
 }
 async function adminNewProduct(){
  if(!can('admin'))throw new Error('Acesso restrito ao administrador.');
@@ -181,7 +181,7 @@ const forms={
   await result(db.rpc('mp_book_appointment',{service:v.service,pet:v.pet,slot,attendance:v.mode,observation:v.notes}));
   await loadUser();await render();toast('Agendamento de demonstração salvo. Nenhum atendimento real foi contratado.');
  },
- 'mp-application-form':async(form,v)=>{await result(db.from('mp_applications').insert({user_id:state.user.id,role:v.role,name:v.name.trim(),registration:v.registration.trim(),address:v.address.trim(),phone:v.phone.trim()}));closeModal();await render();toast('Solicitação enviada para análise.');},
+ 'mp-application-form':async(form,v)=>{await result(db.from('mp_applications').insert({user_id:state.user.id,role:v.service_type==='veterinary'?'vet':v.service_type==='courier'?'courier':'store',service_type:v.service_type,name:v.name.trim(),registration:v.registration.trim(),address:v.address.trim(),phone:v.phone.trim()}));closeModal();await render();toast('Solicitação enviada para análise.');},
  'mp-admin-store-form':async(form,v)=>{
   if(!can('admin'))throw new Error('Acesso restrito.');
   await result(db.from('mp_stores').insert({owner_id:state.user.id,name:v.name.trim(),address:v.address.trim(),phone:v.phone.trim(),is_open:true}));
