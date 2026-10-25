@@ -43,6 +43,16 @@ function applicationModal(role='store') {
  if(!requireLogin())return;
  modal('Credenciamento Mundo Pet',`<form id="mp-application-form" class="mp-stack">${select('role','Quero me cadastrar como',[['store','Pet shop / lojista'],['vet','Veterinário'],['courier','Entregador']],role)}${field('name','Nome profissional ou da loja',state.profile?.full_name,'text','required maxlength="120"')}${field('registration','CNPJ / CRMV / documento profissional','','text','required maxlength="60"')}${field('address','Endereço de atuação','','text','required maxlength="250"')}${field('phone','Telefone de contato',state.profile?.phone,'tel','required maxlength="25"')}<p class="mp-muted">O administrador analisará seus dados antes de habilitar o painel. O envio não garante aprovação.</p><button type="submit" class="mp-btn">Enviar solicitação</button></form>`);
 }
+async function adminNewProduct(){
+ if(!can('admin'))throw new Error('Acesso restrito ao administrador.');
+ const stores=await result(db.from('mp_stores').select('id,name').order('name'));
+ if(!stores.length){toast('Cadastre uma loja primeiro.');return;}
+ modal('Escolha a loja',`<div class="mp-stack" style="margin-top:16px">${stores.map(t=>btn(t.name,'admin-pick-store','mp-full',`data-id="${t.id}"`)).join('')}</div>`);
+}
+function adminNewStore(){
+ if(!can('admin'))throw new Error('Acesso restrito ao administrador.');
+ modal('Cadastrar loja',`<form id="mp-admin-store-form" class="mp-stack">${field('name','Nome da loja','','text','required maxlength="120"')}${field('address','Endereço','','text','maxlength="250"')}${field('phone','Telefone','','tel','maxlength="25"')}<button type="submit" class="mp-btn">Salvar loja</button></form>`);
+}
 async function productModal(id,storeId) {
  if(!requireLogin())return;
  const p=id?await result(db.from('mp_products').select('*').eq('id',id).single()):{};
@@ -92,6 +102,9 @@ const actions={
  'print-order':()=>{if(!activeOrder)return;const o=activeOrder;const w=window.open('','_blank');if(!w)throw new Error('Permita abrir a janela de impressão no navegador.');w.document.write(`<!doctype html><html lang="pt-BR"><head><title>Pedido Mundo Pet</title><style>body{font:16px system-ui;padding:28px;max-width:700px}h1{color:#006c49}li{margin:10px 0}</style></head><body><h1>Mundo Pet</h1><h2>Pedido #${o.id.slice(0,8)}</h2><p>${o.is_demo?'DEMONSTRAÇÃO — SEM COBRANÇA':'Comprovante do pedido'}</p><p>${dateTime(o.created_at)}</p><ul>${o.mp_order_items.map(i=>`<li>${i.quantity}× ${esc(i.name)} • ${money(i.unit_cents*i.quantity)}</li>`).join('')}</ul>${o.discount_cents?`<p>Desconto do cupom: − ${money(o.discount_cents)}</p>`:''}<strong>Total: ${money(o.total_cents)}</strong><p>Pagamento: ${o.payment_status==='paid'?'confirmado':'não recebido'}</p><p>Entrega: ${esc(o.address.street)}, ${esc(o.address.number)} • ${esc(o.address.city)}</p><button onclick="window.print()">Imprimir</button></body></html>`);w.document.close();},
  'toggle-store':async el=>{const s=state.stores.find(s=>s.id===el.dataset.id);await result(db.from('mp_stores').update({is_open:!s.is_open}).eq('id',s.id));await refresh();toast('Disponibilidade da loja atualizada.');},
  'store-filter':el=>{document.querySelectorAll('[data-order-status]').forEach(n=>n.hidden=el.dataset.filter!=='all'&&n.dataset.orderStatus!==el.dataset.filter);},
+ 'admin-new-product':()=>adminNewProduct(),
+ 'admin-new-store':()=>adminNewStore(),
+ 'admin-pick-store':el=>productModal('',el.dataset.id),
  'product-editor':el=>productModal(el.dataset.id,el.dataset.store),
  'toggle-product':async el=>{await result(db.from('mp_products').update({active:el.dataset.active==='true'}).eq('id',el.dataset.id));await refresh();toast('Produto atualizado.');},
  'toggle-online':async()=>{if(!state.profile){await result(db.from('mp_profiles').insert({user_id:state.user.id,full_name:state.user.email,online:true}));}else await result(db.from('mp_profiles').update({online:!state.profile.online}).eq('user_id',state.user.id));await refresh();},
@@ -144,6 +157,11 @@ const forms={
   await loadUser();await render();toast('Agendamento de demonstração salvo. Nenhum atendimento real foi contratado.');
  },
  'mp-application-form':async(form,v)=>{await result(db.from('mp_applications').insert({user_id:state.user.id,role:v.role,name:v.name.trim(),registration:v.registration.trim(),address:v.address.trim(),phone:v.phone.trim()}));closeModal();await render();toast('Solicitação enviada para análise.');},
+ 'mp-admin-store-form':async(form,v)=>{
+  if(!can('admin'))throw new Error('Acesso restrito.');
+  await result(db.from('mp_stores').insert({owner_id:state.user.id,name:v.name.trim(),address:v.address.trim(),phone:v.phone.trim(),is_open:true}));
+  closeModal();await render();toast('Loja cadastrada.');
+ },
  'mp-product-form':async(form,v)=>{
   if(v.image_url&&!v.image_url.startsWith('https://'))throw new Error('Use uma URL de imagem com HTTPS.');
   const payload={store_id:form.dataset.store,name:v.name.trim(),category:v.category,price_cents:Math.round(Number(v.price)*100),stock:Number(v.stock),image_url:v.image_url.trim()};
