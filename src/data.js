@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import config from './config.json' with { type: 'json' };
 
 export const db = createClient(config.url, config.key, {
-  auth: { storageKey: 'mundopet.auth.v1', detectSessionInUrl: true, persistSession: true },
+  auth: { storageKey: 'mundopet.auth.fresh.v2', detectSessionInUrl: true, persistSession: true },
 });
 export const state = { user: null, profile: null, roles: [], pets: [], products: [], services: [], stores: [], orders: [], appointments: [] };
 export async function result(query) { const { data, error } = await query; if (error) throw error; return data; }
