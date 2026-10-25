@@ -6,12 +6,36 @@ const path=location.pathname;
 const page=path.includes('cadastro_de_tutor')?'tutor':path.includes('agendamento_de_servi')?'booking':path.includes('carrinho_checkout')?'cart':path.includes('administrativo')?'admin':path.includes('entregador_corridas')?'courier':path.includes('pet_shop_lojista')?'store':path.includes('veterin_rio_agenda')?'vet':'home';
 let filter='';let search='';let rendering=0;let activeOrder=null;let openingAccount=false;
 const renderers={home,tutor,booking,cart:checkout,store:storePage,vet:vetPage,courier:courierPage,admin:adminPage};
+const welcomeKey='mundopet.welcome.v1';
+function welcomeScreen(){
+ return `<section class="mp-welcome" aria-label="Bem-vindo ao Mundo Pet">
+ <div class="mp-welcome-top"><span class="mp-trust">♧ Tutor Confiável</span><button type="button" data-action="welcome-skip">Pular</button></div>
+ <div class="mp-welcome-logo"><span>🐾</span><strong>Mundo Pet</strong><small>Cuidado completo</small></div>
+ <p class="mp-welcome-kicker">● ECOSSISTEMA PET COMPLETO</p>
+ <h1>O cuidado que seu pet merece, na palma da mão</h1>
+ <p class="mp-welcome-intro">Conectamos você a veterinários, pet shops e serviços para o seu pet.</p>
+ <article class="mp-welcome-highlight"><div class="mp-row mp-between"><span class="mp-trust">⚡ Entrega e conveniência</span><small id="mp-welcome-step">1 de 3</small></div><div class="mp-welcome-feature"><span id="mp-welcome-icon">🚚</span><div><h2 id="mp-welcome-title">Tudo para seu pet em um só lugar</h2><p id="mp-welcome-copy">Encontre rações, acessórios e cuidados para seu melhor amigo.</p></div></div><div class="mp-welcome-dots"><button type="button" data-action="welcome-slide" data-slide="0" aria-label="Ver destaque 1" class="active"></button><button type="button" data-action="welcome-slide" data-slide="1" aria-label="Ver destaque 2"></button><button type="button" data-action="welcome-slide" data-slide="2" aria-label="Ver destaque 3"></button></div></article>
+ <div class="mp-row mp-between"><strong>Serviços integrados</strong><small>Conheça as opções</small></div>
+ <div class="mp-welcome-services"><div>🩺<strong>Clínicas</strong><small>Veterinários</small></div><div>💊<strong>Farmácia Pet</strong><small>Saúde e cuidado</small></div><div>🛁<strong>Banho & Tosa</strong><small>Bem-estar</small></div></div>
+ <div class="mp-welcome-offer"><span>🎁</span><div><strong>Bem-vindo ao Mundo Pet</strong><small>Conheça nossos produtos e serviços</small></div></div>
+ <button type="button" class="mp-btn mp-full" data-action="welcome-signup">🐾 Começar agora • Criar conta grátis</button>
+ <button type="button" class="mp-btn outline mp-full" data-action="welcome-login">Já sou tutor cadastrado →</button>
+ <p class="mp-welcome-muted">Acesso com Google e Apple: disponível somente após configurar os provedores de autenticação.</p>
+ <p class="mp-welcome-legal">Ao continuar, você concorda com os Termos de Uso e a Política de Privacidade do aplicativo.</p>
+ </section>`;
+}
+function showWelcome(){
+ if(page!=='home'||state.user||localStorage.getItem(welcomeKey)==='seen'||new URLSearchParams(location.search).size)return;
+ const main=document.getElementById('mp-main');if(!main)return;
+ main.innerHTML=welcomeScreen();document.querySelector('.mp-top')?.setAttribute('hidden','');document.querySelector('.mp-nav')?.setAttribute('hidden','');
+}
+function dismissWelcome(){localStorage.setItem(welcomeKey,'seen');render();}
 async function render() {
  const token=++rendering;
  try {
   const body=await renderers[page]();if(token!==rendering)return;
   shell(page,body,state.user?state.profile?.full_name||'Sua conta conectada':'Mundo Pet');
-  if(page==='home'){updateCatalog(filter,search);const input=document.getElementById('mp-search');if(input)input.value=search;if(new URLSearchParams(location.search).has('explore'))requestAnimationFrame(()=>setTimeout(()=>document.getElementById('mp-catalog')?.scrollIntoView({behavior:'smooth',block:'start'}),100));}
+  if(page==='home'){updateCatalog(filter,search);showWelcome();const input=document.getElementById('mp-search');if(input)input.value=search;if(new URLSearchParams(location.search).has('explore'))requestAnimationFrame(()=>setTimeout(()=>document.getElementById('mp-catalog')?.scrollIntoView({behavior:'smooth',block:'start'}),100));}
  }catch(error){shell(page,`<div class="mp-runtime-error"><strong>Não foi possível carregar esta página.</strong><p>${esc(friendly(error))}</p>${btn('Tentar novamente','refresh')}</div>`);}
 }
 function friendly(error) {
@@ -102,6 +126,10 @@ async function orderStatus(id,status,code='') {
  await refresh();toast('Pedido atualizado: '+statusText(status));
 }
 const actions={
+ 'welcome-skip':dismissWelcome,
+ 'welcome-signup':()=>{localStorage.setItem(welcomeKey,'seen');render().then(()=>authModal('signup'));},
+ 'welcome-login':()=>{localStorage.setItem(welcomeKey,'seen');render().then(()=>authModal('login'));},
+ 'welcome-slide':el=>{const slides=[['🚚','Tudo para seu pet em um só lugar','Encontre rações, acessórios e cuidados para seu melhor amigo.'],['🩺','Cuide da saúde do seu pet','Encontre veterinários e agende serviços disponíveis.'],['🐾','Tudo para a rotina do seu amigo','Explore pet shops e serviços em um só aplicativo.']];const n=Math.max(0,Math.min(2,Number(el.dataset.slide)||0));document.getElementById('mp-welcome-icon').textContent=slides[n][0];document.getElementById('mp-welcome-title').textContent=slides[n][1];document.getElementById('mp-welcome-copy').textContent=slides[n][2];document.getElementById('mp-welcome-step').textContent=(n+1)+' de 3';document.querySelectorAll('[data-action="welcome-slide"]').forEach((b,i)=>b.classList.toggle('active',i===n));},
  home:()=>{location.href=route.home;},account:accountModal,login:()=>authModal(),signup:()=>authModal('signup'),recover:()=>authModal('recover'),'close-modal':closeModal,
  logout:async()=>{await result(db.auth.signOut());state.user=null;await loadUser();closeModal();await render();toast('Você saiu da conta.');},
  refresh:async()=>{await refresh();toast('Dados atualizados.');},
