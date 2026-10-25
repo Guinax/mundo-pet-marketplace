@@ -85,12 +85,25 @@ export async function vetPage() {
 export async function courierPage() {
  const blocked=gate('courier');if(blocked)return blocked;
  const [offers,orders]=await Promise.all([result(db.rpc('mp_available_deliveries')),result(db.from('mp_orders').select('*,mp_order_items(*)').eq('courier_id',state.user.id).order('created_at',{ascending:false}).limit(100))]);
- const tab=new URLSearchParams(location.search).get('tab');
  if(tab==='finance')return finance(orders);
  return `${card('',`<h2>${esc(state.profile?.full_name||'Pet Entregador')}</h2><p class="mp-muted">Seus pedidos e rotas de entrega</p>`)}${card('',`<div class="mp-row mp-between"><div><strong>Você está ${state.profile?.online?'online':'offline'}</strong><p class="mp-muted">${state.profile?.online?'Buscando corridas disponíveis':'Ative para receber ofertas de entrega'}</p></div><button class="mp-btn ${state.profile?.online?'':'outline'}" role="switch" aria-checked="${!!state.profile?.online}" aria-label="Disponibilidade do entregador" data-action="toggle-online">${state.profile?.online?'Online':'Ficar online'}</button></div>`)}<div class="mp-grid">${kpi('Entregas concluídas',orders.filter(o=>o.status==='delivered').length,'task_alt')}${kpi('Em andamento',orders.filter(o=>!['canceled','delivered'].includes(o.status)).length,'two_wheeler')}</div>${tab!=='deliveries'?`<section><h2 class="mp-section-title">Novas entregas disponíveis</h2><div class="mp-stack">${offers.map(o=>card('',`${badge('Nova entrega','blue')}<h3 style="margin-top:12px">${esc(o.store_name)}</h3><p>${esc(o.pickup_address)}</p><p class="mp-muted">Destino liberado após o aceite. ${o.is_demo?'Demonstração sem remuneração real.':'Consulte as condições de entrega.'}</p>${btn('Aceitar corrida','order-status','mp-full',`data-id="${o.id}" data-status="assigned"`)}`)).join('')||empty('Nenhuma oferta no momento',state.profile?.online?'As ofertas serão atualizadas automaticamente.':'Fique online para visualizar as corridas.')}</div></section>`:''}<section><h2 class="mp-section-title">Minhas entregas</h2><div class="mp-stack">${orders.map(o=>orderCard(o,`${['assigned','delivering'].includes(o.status)?`<p>${icon('location_on')} ${esc(o.address.street)}, ${esc(o.address.number)} • ${esc(o.address.city)}</p>${btn('Abrir rota no Google Maps','map-route','outline',`data-id="${o.id}"`)}`:''}${o.status==='assigned'?btn('Confirmar coleta na loja','order-status','',`data-id="${o.id}" data-status="delivering"`):''}${o.status==='delivering'?`<form class="mp-stack mp-delivery-form" data-id="${o.id}">${field('code','Código do cliente (8 dígitos)','','text','required pattern="[0-9]{8}" inputmode="numeric" maxlength="8"')}<button class="mp-btn" type="submit">Confirmar entrega</button></form>`:''}${btn('Detalhes e conversa do pedido','order-details','outline small',`data-id="${o.id}"`)}`)).join('')||empty('Nenhuma entrega vinculada')}</div></section>`;
 }
 export async function adminPage() {
  const blocked=gate('admin');if(blocked)return blocked;
+ const tab=new URLSearchParams(location.search).get('tab');
+ if(tab==='products'){
+  const [stores,products]=await Promise.all([
+   result(db.from('mp_stores').select('*').order('name')),
+   result(db.from('mp_products').select('*').order('created_at',{ascending:false}))
+  ]);
+  return `<div class="mp-banner"><strong>${icon('inventory_2')} Gestão de produtos</strong><p class="mp-muted">Cadastre e atualize os produtos exibidos na plataforma.</p></div>
+  <div class="mp-stack" style="margin:16px 0">
+   ${btn('Cadastrar nova loja','admin-new-store','mp-full')}
+   ${stores.length?btn('Cadastrar produto','admin-new-product','mp-full'):''}
+  </div>
+  <section><h2 class="mp-section-title">Produtos cadastrados (${products.length})</h2>
+  <div class="mp-stack">${products.map(p=>`<article class="mp-card"><div class="mp-row mp-between"><div><strong>${esc(p.name)}</strong><p class="mp-muted">${esc(stores.find(t=>t.id===p.store_id)?.name||'Loja')} · ${esc(p.category)}</p></div>${badge(p.active?'Ativo':'Oculto')}</div><div class="mp-row mp-between"><strong>${money(p.price_cents)}</strong><span>Estoque: ${p.stock}</span></div><div class="mp-grid" style="margin-top:12px">${btn('Editar','product-editor','outline',`data-id="${p.id}" data-store="${p.store_id}"`)}${btn(p.active?'Ocultar':'Ativar','toggle-product','outline',`data-id="${p.id}" data-active="${!p.active}"`)}</div></article>`).join('')||empty('Nenhum produto cadastrado')}</div></section>`;
+ }
  const [applications,orders,appointments]=await Promise.all([result(db.from('mp_applications').select('*').order('created_at',{ascending:false})),result(db.from('mp_orders').select('*,mp_order_items(*)').order('created_at',{ascending:false}).limit(100)),result(db.from('mp_appointments').select('*,mp_services(name,provider_name),mp_pets(name)').order('starts_at',{ascending:false}).limit(100))]);
  const tab=new URLSearchParams(location.search).get('tab');
  if(tab==='finance')return finance(orders);
