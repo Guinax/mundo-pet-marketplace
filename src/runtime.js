@@ -56,7 +56,17 @@ function adminNewStore(){
 async function productModal(id,storeId) {
  if(!requireLogin())return;
  const p=id?await result(db.from('mp_products').select('*').eq('id',id).single()):{};
- modal(id?'Editar produto e estoque':'Novo produto',`<form id="mp-product-form" class="mp-stack" data-id="${esc(id||'')}" data-store="${esc(storeId)}">${field('name','Nome do produto',p.name,'text','required maxlength="150"')}${select('category','Categoria',[['Pet Shops','Pet Shops'],['Farmácia','Farmácia']],p.category||'Pet Shops')}<div class="mp-grid">${field('price','Preço (R$)',p.price_cents?(p.price_cents/100).toFixed(2):'','number','required min="0.01" max="100000" step="0.01"')}${field('stock','Estoque',p.stock??0,'number','required min="0" max="999999" step="1"')}</div>${field('image_url','URL da foto (HTTPS)',p.image_url,'url','required placeholder="https://..."')}<p class="mp-muted">Use uma imagem que você tenha autorização para publicar.</p><button class="mp-btn" type="submit">Salvar produto</button></form>`);
+ const section=(title,content)=>`<section class="mp-card mp-stack"><h3>${title}</h3>${content}</section>`;
+ const checked=(name,label,yes)=>`<label class="mp-row mp-between"><span>${label}</span><input type="checkbox" name="${name}" ${yes?'checked':''}></label>`;
+ const price=n=>n==null?'':(n/100).toFixed(2);
+ modal(id?'Editar produto':'Cadastrar produto',`<form id="mp-product-form" class="mp-stack" data-id="${esc(id||'')}" data-store="${esc(storeId)}">
+ ${section('Fotos do produto',field('image_url','Foto principal (HTTPS)',p.image_url||'','url')+[1,2,3,4,5].map(i=>field('photo'+i,'Foto adicional '+i,p.images?.[i-1]||'','url')).join(''))}
+ ${section('Informações básicas',field('name','Nome completo',p.name||'','text','required maxlength="150"')+field('ean','Código de barras',p.ean||'')+field('sku','SKU',p.sku||'')+field('brand','Marca',p.brand||'')+select('category','Categoria',[['Pet Shops','Pet Shops'],['Farmácia','Farmácia'],['Rações','Rações'],['Brinquedos','Brinquedos'],['Higiene','Higiene'],['Acessórios','Acessórios']],p.category||'Pet Shops'))}
+ ${section('Preço e disponibilidade',field('price','Preço de venda (R$)',price(p.price_cents),'number','required min="0.01" step="0.01"')+field('old_price','Preço anterior (R$)',price(p.old_price_cents),'number','min="0" step="0.01"')+checked('active','Produto ativo',p.active!==false))}
+ ${section('Estoque e logística',field('stock','Estoque atual',p.stock??0,'number','required min="0" step="1"')+field('min_stock','Alerta mínimo',p.min_stock??5,'number','min="0" step="1"')+field('batch_code','Lote',p.batch_code||'')+field('expiry_date','Validade',p.expiry_date||'','date')+checked('auto_stock','Baixa automática',p.auto_stock!==false)+checked('pickup_enabled','Retirada na loja',p.pickup_enabled!==false)+checked('delivery_enabled','Entrega',p.delivery_enabled!==false))}
+ ${section('Dimensões',field('weight_kg','Peso (kg)',p.weight_kg||'','number','min="0" step="0.01"')+field('height_cm','Altura (cm)',p.height_cm||'','number','min="0" step="0.1"')+field('width_cm','Largura (cm)',p.width_cm||'','number','min="0" step="0.1"')+field('depth_cm','Profundidade (cm)',p.depth_cm||'','number','min="0" step="0.1"'))}
+ ${section('Descrição e cuidados',textarea('description','Descrição e modo de usar',p.description||'')+checked('requires_prescription','Exige receita veterinária',p.requires_prescription===true))}
+ <button class="mp-btn mp-full" type="submit">Salvar alterações</button></form>`);
 }
 async function orderDetails(id) {
  if(!requireLogin())return;
