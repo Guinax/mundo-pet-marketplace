@@ -38,7 +38,7 @@ function authModal(mode='login') {
 function newPasswordModal(){modal('Definir nova senha',`<form id="mp-new-password-form" class="mp-stack">${field('password','Nova senha','','password','required minlength="8" autocomplete="new-password"')}${field('confirm','Confirmar nova senha','','password','required minlength="8" autocomplete="new-password"')}<p class="mp-error" role="alert"></p><button type="submit" class="mp-btn mp-full">Salvar nova senha</button></form>`);}
 function accountModal() {
  if(!state.user){authModal();return;}
- modal('Minha conta',`<p>${esc(state.profile?.full_name||state.user.email)}</p><p class="mp-muted">${esc(state.user.email)}</p><div class="mp-stack" style="margin-top:18px"><a class="mp-btn" href="${route.tutor}">Meus dados e pets</a><a class="mp-btn outline" href="${route.cart}?orders=1">Meus pedidos</a><a class="mp-btn outline" href="${route.booking}">Meus agendamentos</a>${btn('Solicitar acesso profissional','apply','outline')}${btn('Sair da conta','logout','danger')}</div>`);
+ modal('Minha conta',`<p>${esc(state.profile?.full_name||state.user.email)}</p><p class="mp-muted">${esc(state.user.email)}</p><div class="mp-stack" style="margin-top:18px">${state.roles.includes('admin')&&state.user.email?.toLowerCase()==='wap33000@gmail.com'?`<a class="mp-btn" href="${route.admin}">Painel Admin</a>`:''}<a class="mp-btn" href="${route.tutor}">Meus dados e pets</a><a class="mp-btn outline" href="${route.cart}?orders=1">Meus pedidos</a><a class="mp-btn outline" href="${route.booking}">Meus agendamentos</a>${btn('Solicitar acesso profissional','apply','outline')}${btn('Sair da conta','logout','danger')}</div>`);
 }
 function applicationModal(role='store') {
  if(!requireLogin())return;
