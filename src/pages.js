@@ -150,3 +150,15 @@ export async function adminPage() {
  const orderList=`<section><h2 class="mp-section-title">Monitoramento dos pedidos</h2><div class="mp-stack">${orders.map(storeOrder).join('')||empty('Nenhum pedido cadastrado')}</div></section>`;
  return tab==='applications'?appList:tab==='orders'?orderList:`${summary}${appList}${orderList}<section><h2 class="mp-section-title">Agendamentos</h2><div class="mp-stack">${appointmentsList(appointments,true)}</div></section>${finance(orders)}`;
 }
+
+export function specialtyPage(kind) {
+ const config={
+  hotel:{title:'Hotel, hospedagem e creche',intro:'Encontre opções de hospedagem e cuidados diurnos para seu pet.',category:'Hospedagem',ic:'hotel',details:'Consulte o profissional sobre horários, alimentação, vacinação, porte aceito e período da estadia.'},
+  walkers:{title:'Dog Walkers e passeios',intro:'Conheça profissionais que oferecem passeios e acompanhamento de cães.',category:'Dog Walkers',ic:'directions_walk',details:'Combine duração, local do passeio, quantidade de cães e cuidados necessários antes de agendar.'},
+  pharmacy:{title:'Farmácia Pet',intro:'Encontre produtos de saúde e higiene para animais nas lojas parceiras.',category:'Farmácia',ic:'medication',details:'Medicamentos sujeitos a receita exigem orientação veterinária. Confira disponibilidade e requisitos com a loja.'}
+ };
+ const c=config[kind];if(!c)return empty('Área indisponível');
+ const services=state.services.filter(x=>x.category===c.category&&x.active!==false);
+ const products=kind==='pharmacy'?state.products.filter(x=>x.category==='Farmácia'&&x.active!==false):[];
+ return `<section class="mp-card mp-stack"><div class="mp-row">${icon(c.ic)}<h2>${c.title}</h2></div><p>${c.intro}</p><p class="mp-muted">${c.details}</p></section>${kind==='pharmacy'?`<section><h2 class="mp-section-title">Produtos disponíveis</h2><div class="mp-products-grid">${products.length?products.map(productCard).join(''):empty('Nenhum produto disponível','Novas farmácias parceiras poderão anunciar aqui.')}</div></section>`:''}<section><h2 class="mp-section-title">${kind==='pharmacy'?'Serviços relacionados':'Profissionais e estabelecimentos'}</h2><div class="mp-stack">${services.length?services.map(serviceCard).join(''):empty('Nenhum anúncio disponível','Os profissionais poderão cadastrar seus serviços após aprovação.')}</div></section><section class="mp-card"><h3>Quer oferecer este serviço?</h3><p class="mp-muted">Solicite o cadastro de parceiro para análise do administrador.</p>${btn('Solicitar cadastro','apply','outline',`data-role="store"`)}</section>`;
+}
