@@ -3,6 +3,7 @@ import {esc,icon,btn,field,select,textarea,card,badge,empty,demo,safeImage,produ
 
 export function gate(role='') {
  if(!state.user)return `<div class="mp-access">${card('',empty('Entre na sua conta','Seus dados ficam protegidos e disponíveis nos seus próximos acessos.',btn('Entrar ou criar conta','login','mp-full')))}</div>`;
+ if(role==='admin'&&!state.roles.includes('admin'))return `<div class="mp-access">${card('',`${empty('Acesso restrito','Somente a conta administradora autorizada pode acessar este painel.')}<a class="mp-btn outline" href="${route.home}">Voltar ao início</a>`)}</div>`;
  if(role&&!can(role))return `<div class="mp-access">${card('',`${empty('Solicite acesso a esta área','O cadastro profissional passa pela aprovação do administrador.')}<div class="mp-stack">${btn('Solicitar credenciamento','apply','mp-full',`data-role="${role}"`)}<a class="mp-btn outline" href="${route.tutor}">Ir ao meu perfil</a></div>`)}</div>`;
  return null;
 }
