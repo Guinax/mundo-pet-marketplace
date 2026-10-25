@@ -211,7 +211,8 @@ async function init(){
  }else if(authParams.has('login')){if(!state.user)authModal();else toast('E-mail confirmado. Sua conta está conectada.');}
 }
 db.auth.onAuthStateChange((event,session)=>{
- if(event==='PASSWORD_RECOVERY'){state.user=session?.user||null;setTimeout(newPasswordModal,0);}\n if(event==='SIGNED_IN'&&new URLSearchParams(location.search).has('reset-password')&&session?.user){state.user=session.user;setTimeout(newPasswordModal,0);}
+ if(event==='PASSWORD_RECOVERY'){state.user=session?.user||null;setTimeout(newPasswordModal,0);}
+ if(event==='SIGNED_IN'&&new URLSearchParams(location.search).has('reset-password')&&session?.user){state.user=session.user;setTimeout(newPasswordModal,0);}
  if(event==='TOKEN_REFRESHED')state.user=session?.user||null;
  if(event==='SIGNED_OUT'){state.user=null;setTimeout(()=>{loadUser().then(render);},0);}
  if(event==='SIGNED_IN'&&!state.user&&!openingAccount){state.user=session?.user||null;setTimeout(()=>{loadUser().then(render);},0);}
