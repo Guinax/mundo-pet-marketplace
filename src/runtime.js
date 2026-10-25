@@ -5,12 +5,41 @@ import { home,updateCatalog,tutor,booking,checkout,storePage,vetPage,courierPage
 const path=location.pathname;
 const page=path.includes('hotel_hospedagem')?'hotel':path.includes('dog_walkers_passeios')?'walkers':path.includes('mundo_pet_farmacia')?'pharmacy':path.includes('cadastro_de_tutor')?'tutor':path.includes('agendamento_de_servi')?'booking':path.includes('carrinho_checkout')?'cart':path.includes('administrativo')?'admin':path.includes('entregador_corridas')?'courier':path.includes('pet_shop_lojista')?'store':path.includes('veterin_rio_agenda')?'vet':'home';
 let filter='';let search='';let rendering=0;let activeOrder=null;let openingAccount=false;
+let deliveryQuote=null;let deliveryQuoteKey='';let deliverySeq=0;
+function deliveryFingerprint(){const items=cart();const a=state.profile?.address||{};return JSON.stringify({uid:state.user?.id||'',items,address:a});}
+async function updateDeliveryQuote(){
+ if(page!=='cart')return;
+ const status=document.getElementById('mp-delivery-quote-result'),value=document.getElementById('mp-shipping-value'),grand=document.getElementById('mp-grand-total'),actions=document.getElementById('mp-payment-actions');
+ if(!status)return;
+ const key=deliveryFingerprint(),seq=++deliverySeq;deliveryQuote=null;deliveryQuoteKey='';
+ if(actions)actions.querySelectorAll('button').forEach(b=>b.disabled=true);
+ if(value)value.textContent='Calculando…';if(grand)grand.textContent='Calculando…';
+ const items=cart(),a=state.profile?.address||{};
+ if(!state.user||!a.street||!a.number||!a.city||!a.state){status.textContent='Entre na conta e complete seu endereço para calcular o frete automaticamente.';if(value)value.textContent='Endereço pendente';return;}
+ if(!items.length)return;
+ const stores=[...new Set(items.map(i=>state.products.find(p=>p.id===i.product_id)?.store_id))];
+ if(stores.length!==1||!stores[0]){status.textContent='Para finalizar, selecione produtos de uma única loja.';if(value)value.textContent='Indisponível';return;}
+ status.textContent='Calculando automaticamente a rota até seu endereço…';
+ try{
+ const {data,error}=await db.functions.invoke('mp-delivery-quote',{body:{store_id:stores[0]}});
+ if(seq!==deliverySeq||key!==deliveryFingerprint())return;
+ if(error||!data?.available||!Number.isSafeInteger(data.delivery_cents))throw Error('Cotação indisponível');
+ deliveryQuote=data;deliveryQuoteKey=key;
+ const subtotal=cart().reduce((sum,i)=>sum+(state.products.find(p=>p.id===i.product_id)?.price_cents||0)*i.quantity,0);
+ status.textContent='Frete calculado automaticamente • '+(data.distance_m/1000).toFixed(2).replace('.',',')+' km';
+ if(value)value.textContent=money(data.delivery_cents);
+ if(grand)grand.textContent=money(subtotal+data.delivery_cents);
+ if(actions)actions.querySelectorAll('button').forEach(b=>b.disabled=false);
+ }catch{if(seq!==deliverySeq)return;status.textContent='Não foi possível calcular o frete. Confira seu endereço e tente atualizar a página.';if(value)value.textContent='Indisponível';}
+}
+
 const renderers={home,tutor,booking,cart:checkout,store:storePage,vet:vetPage,courier:courierPage,admin:adminPage,hotel:()=>specialtyPage('hotel'),walkers:()=>specialtyPage('walkers'),pharmacy:()=>specialtyPage('pharmacy')};
 async function render() {
  const token=++rendering;
  try {
   const body=await renderers[page]();if(token!==rendering)return;
   shell(page,body,state.user?state.profile?.full_name||'Sua conta conectada':'Mundo Pet');
+  if(page==='cart')void updateDeliveryQuote();
   if(page==='home'){updateCatalog(filter,search);const input=document.getElementById('mp-search');input.value=search;if(new URLSearchParams(location.search).has('explore'))document.getElementById('mp-catalog')?.scrollIntoView({block:'start'});}
  }catch(error){shell(page,`<div class="mp-runtime-error"><strong>Não foi possível carregar esta página.</strong><p>${esc(friendly(error))}</p>${btn('Tentar novamente','refresh')}</div>`);}
 }
@@ -173,7 +202,7 @@ const actions={
  'edit-pet':el=>{const p=state.pets.find(p=>p.id===el.dataset.id);modal('Editar pet',petEditor(p));},
  'cart-quantity':async el=>{const items=cart();const item=items.find(i=>i.product_id===el.dataset.id);if(!item)return;const qty=item.quantity+Number(el.dataset.change);const p=state.products.find(p=>p.id===item.product_id);if(qty>Math.min(p?.stock||0,99))throw new Error('Quantidade maior que o estoque disponível.');item.quantity=qty;saveCart(items);await render();},
  'remove-cart':async el=>{saveCart(cart().filter(i=>i.product_id!==el.dataset.id));await render();},
- checkout:async(el)=>{if(!requireLogin())return;const a=state.profile?.address;if(!a?.street||!a.number||!a.city||!a.state)throw new Error('Complete o endereço no perfil.');const items=cart();if(!items.length)throw new Error('Seu carrinho está vazio.');const method=el.dataset.method;if(!['infinitepay_pix','infinitepay_card'].includes(method))throw new Error('Selecione Pix ou cartão.');const {data,error}=await db.functions.invoke('mp-secure-checkout',{body:{cart:items,request_id:orderRequestKey(),payment_method:method}});if(error||!data?.url)throw new Error('Pagamento indisponível. Confira endereço e estoque e tente novamente.');const url=new URL(data.url);if(url.protocol!=='https:'||!(url.hostname==='infinitepay.io'||url.hostname.endsWith('.infinitepay.io')))throw new Error('Link de pagamento inválido.');location.assign(url.href);},
+ checkout:async(el)=>{if(!requireLogin())return;const a=state.profile?.address;if(!a?.street||!a.number||!a.city||!a.state)throw new Error('Complete o endereço no perfil.');const items=cart();if(!items.length)throw new Error('Seu carrinho está vazio.');if(!deliveryQuote||deliveryQuoteKey!==deliveryFingerprint())throw new Error('Aguarde o cálculo automático do frete antes de pagar.');const method=el.dataset.method;if(!['infinitepay_pix','infinitepay_card'].includes(method))throw new Error('Selecione Pix ou cartão.');const {data,error}=await db.functions.invoke('mp-secure-checkout',{body:{cart:items,request_id:orderRequestKey(),payment_method:method}});if(error||!data?.url)throw new Error('Pagamento indisponível. Confira endereço e estoque e tente novamente.');const url=new URL(data.url);if(url.protocol!=='https:'||!(url.hostname==='infinitepay.io'||url.hostname.endsWith('.infinitepay.io')))throw new Error('Link de pagamento inválido.');location.assign(url.href);},
  'order-status':el=>orderStatus(el.dataset.id,el.dataset.status),
  'order-details':el=>orderDetails(el.dataset.id),
  'print-order':()=>{if(!activeOrder)return;const o=activeOrder;const w=window.open('','_blank');if(!w)throw new Error('Permita abrir a janela de impressão no navegador.');w.document.write(`<!doctype html><html lang="pt-BR"><head><title>Pedido Mundo Pet</title><style>body{font:16px system-ui;padding:28px;max-width:700px}h1{color:#006c49}li{margin:10px 0}</style></head><body><h1>Mundo Pet</h1><h2>Pedido #${o.id.slice(0,8)}</h2><p>${o.is_demo?'DEMONSTRAÇÃO — SEM COBRANÇA':'Comprovante do pedido'}</p><p>${dateTime(o.created_at)}</p><ul>${o.mp_order_items.map(i=>`<li>${i.quantity}× ${esc(i.name)} • ${money(i.unit_cents*i.quantity)}</li>`).join('')}</ul>${o.discount_cents?`<p>Desconto do cupom: − ${money(o.discount_cents)}</p>`:''}<strong>Total: ${money(o.total_cents)}</strong><p>Pagamento: ${o.payment_status==='paid'?'confirmado':'não recebido'}</p><p>Entrega: ${esc(o.address.street)}, ${esc(o.address.number)} • ${esc(o.address.city)}</p><button onclick="window.print()">Imprimir</button></body></html>`);w.document.close();},
