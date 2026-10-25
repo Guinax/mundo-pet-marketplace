@@ -113,11 +113,12 @@ const actions={
  'print-order':()=>{if(!activeOrder)return;const o=activeOrder;const w=window.open('','_blank');if(!w)throw new Error('Permita abrir a janela de impressão no navegador.');w.document.write(`<!doctype html><html lang="pt-BR"><head><title>Pedido Mundo Pet</title><style>body{font:16px system-ui;padding:28px;max-width:700px}h1{color:#006c49}li{margin:10px 0}</style></head><body><h1>Mundo Pet</h1><h2>Pedido #${o.id.slice(0,8)}</h2><p>${o.is_demo?'DEMONSTRAÇÃO — SEM COBRANÇA':'Comprovante do pedido'}</p><p>${dateTime(o.created_at)}</p><ul>${o.mp_order_items.map(i=>`<li>${i.quantity}× ${esc(i.name)} • ${money(i.unit_cents*i.quantity)}</li>`).join('')}</ul>${o.discount_cents?`<p>Desconto do cupom: − ${money(o.discount_cents)}</p>`:''}<strong>Total: ${money(o.total_cents)}</strong><p>Pagamento: ${o.payment_status==='paid'?'confirmado':'não recebido'}</p><p>Entrega: ${esc(o.address.street)}, ${esc(o.address.number)} • ${esc(o.address.city)}</p><button onclick="window.print()">Imprimir</button></body></html>`);w.document.close();},
  'toggle-store':async el=>{const s=state.stores.find(s=>s.id===el.dataset.id);await result(db.from('mp_stores').update({is_open:!s.is_open}).eq('id',s.id));await refresh();toast('Disponibilidade da loja atualizada.');},
  'store-filter':el=>{document.querySelectorAll('[data-order-status]').forEach(n=>n.hidden=el.dataset.filter!=='all'&&n.dataset.orderStatus!==el.dataset.filter);},
+ 'review-product':async el=>{if(!state.roles.includes('admin'))throw new Error('Acesso restrito.');await result(db.from('mp_products').update({approval_status:el.dataset.status,active:el.dataset.status==='approved'}).eq('id',el.dataset.id));await refresh();toast('Solicitação de produto analisada.');},
  'admin-new-product':()=>adminNewProduct(),
  'admin-new-store':()=>adminNewStore(),
  'admin-pick-store':el=>productModal('',el.dataset.id),
  'product-editor':el=>productModal(el.dataset.id,el.dataset.store),
- 'toggle-product':async el=>{await result(db.from('mp_products').update({active:el.dataset.active==='true'}).eq('id',el.dataset.id));await refresh();toast('Produto atualizado.');},
+ 'toggle-product':async el=>{if(!state.roles.includes('admin'))throw new Error('Ativação depende da aprovação do administrador.');await result(db.from('mp_products').update({active:el.dataset.active==='true'}).eq('id',el.dataset.id));await refresh();toast('Produto atualizado.');},
  'toggle-online':async()=>{if(!state.profile){await result(db.from('mp_profiles').insert({user_id:state.user.id,full_name:state.user.email,online:true}));}else await result(db.from('mp_profiles').update({online:!state.profile.online}).eq('user_id',state.user.id));await refresh();},
  'map-route':async el=>{const o=await result(db.from('mp_orders').select('address').eq('id',el.dataset.id).single());const a=o.address;const dest=[a.street,a.number,a.city,a.state].filter(Boolean).join(', ');window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest),'_blank','noopener,noreferrer');},
  'appointment-status':async el=>{await result(db.rpc('mp_transition_appointment',{aid:el.dataset.id,next_status:el.dataset.status}));await refresh();toast('Agendamento atualizado.');},
@@ -181,6 +182,8 @@ const forms={
   const on=name=>form.elements.namedItem(name)?.checked===true;
   const payload={store_id:form.dataset.store,name:v.name.trim(),category:v.category,price_cents:cents(v.price),old_price_cents:cents(v.old_price),stock:Number(v.stock),min_stock:Number(v.min_stock||0),image_url:v.image_url.trim(),images:photos,ean:v.ean.trim(),sku:v.sku.trim(),brand:v.brand.trim(),description:v.description.trim(),batch_code:v.batch_code.trim(),expiry_date:v.expiry_date||null,weight_kg:numeric(v.weight_kg),height_cm:numeric(v.height_cm),width_cm:numeric(v.width_cm),depth_cm:numeric(v.depth_cm),active:on('active'),auto_stock:on('auto_stock'),pickup_enabled:on('pickup_enabled'),delivery_enabled:on('delivery_enabled'),requires_prescription:on('requires_prescription')};
   if(!payload.name||!Number.isFinite(payload.price_cents)||payload.price_cents<1)throw new Error('Informe nome e preço válido.');
+  const admin=state.roles.includes('admin');
+  if(!admin){payload.approval_status='pending';payload.active=false;payload.submitted_by=state.user.id;}
   await result(form.dataset.id?db.from('mp_products').update(payload).eq('id',form.dataset.id):db.from('mp_products').insert(payload));
   closeModal();await refresh();toast('Produto salvo no catálogo.');
  },
