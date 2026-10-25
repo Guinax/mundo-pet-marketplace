@@ -61,7 +61,7 @@ async function productModal(id,storeId) {
  const checked=(name,label,yes)=>`<label class="mp-row mp-between"><span>${label}</span><input type="checkbox" name="${name}" ${yes?'checked':''}></label>`;
  const price=n=>n==null?'':(n/100).toFixed(2);
  modal(id?'Editar produto':'Cadastrar produto',`<form id="mp-product-form" class="mp-stack" data-id="${esc(id||'')}" data-store="${esc(storeId)}">
- ${section('Fotos do produto',field('image_url','Foto principal (HTTPS)',p.image_url||'','url')+[1,2,3,4,5].map(i=>field('photo'+i,'Foto adicional '+i,p.images?.[i-1]||'','url')).join(''))}
+ ${section('Fotos do produto',field('main_photo','Foto principal do dispositivo','','file','accept="image/jpeg,image/png,image/webp"')+[1,2,3,4,5].map(i=>field('photo'+i,'Foto adicional '+i,'','file','accept="image/jpeg,image/png,image/webp"')).join('')+(p.image_url?`<p class="mp-muted">Foto principal atual preservada até escolher outra.</p>`:'')+(p.images?.length?`<p class="mp-muted">Fotos adicionais atuais preservadas até escolher novas.</p>`:''))}
  ${section('Informações básicas',field('name','Nome completo',p.name||'','text','required maxlength="150"')+field('ean','Código de barras',p.ean||'')+field('sku','SKU',p.sku||'')+field('brand','Marca',p.brand||'')+select('category','Categoria',[['Pet Shops','Pet Shops'],['Farmácia','Farmácia'],['Rações','Rações'],['Brinquedos','Brinquedos'],['Higiene','Higiene'],['Acessórios','Acessórios']],p.category||'Pet Shops'))}
  ${section('Preço e disponibilidade',field('price','Preço de venda (R$)',price(p.price_cents),'number','required min="0.01" step="0.01"')+field('old_price','Preço anterior (R$)',price(p.old_price_cents),'number','min="0" step="0.01"')+checked('active','Produto ativo',p.active!==false))}
  ${section('Estoque e logística',field('stock','Estoque atual',p.stock??0,'number','required min="0" step="1"')+field('min_stock','Alerta mínimo',p.min_stock??5,'number','min="0" step="1"')+field('batch_code','Lote',p.batch_code||'')+field('expiry_date','Validade',p.expiry_date||'','date')+checked('auto_stock','Baixa automática',p.auto_stock!==false)+checked('pickup_enabled','Retirada na loja',p.pickup_enabled!==false)+checked('delivery_enabled','Entrega',p.delivery_enabled!==false))}
@@ -85,7 +85,7 @@ async function clinicalModal(id) {
 async function serviceModal(id) {
  if(!requireLogin())return;
  const s=id?await result(db.from('mp_services').select('*').eq('id',id).single()):{};
- modal(id?'Editar serviço':'Novo serviço',`<form id="mp-service-form" class="mp-stack" data-id="${esc(id||'')}">${field('name','Nome do serviço',s.name,'text','required maxlength="150"')}${field('provider_name','Nome profissional / clínica',s.provider_name||state.profile?.full_name,'text','required maxlength="120"')}${select('category','Categoria',[['Veterinários','Veterinários'],['Banho & Tosa','Banho & Tosa'],['Hospedagem','Hospedagem'],['Dog Walkers','Dog Walkers']],s.category||'Veterinários')}<div class="mp-grid">${field('price','Valor (R$)',s.price_cents?(s.price_cents/100).toFixed(2):'','number','required min="0.01" max="100000" step="0.01"')}${field('duration','Duração (minutos)',s.duration_minutes||60,'number','required min="15" max="480" step="15"')}</div>${field('image_url','Foto do serviço (HTTPS)',s.image_url,'url')}<p class="mp-muted">Novos serviços são salvos como inativos. Atendimentos comerciais só serão habilitados após concluir a configuração de operação e pagamento.</p><button class="mp-btn" type="submit">Salvar serviço</button></form>`);
+ modal(id?'Editar serviço':'Novo serviço',`<form id="mp-service-form" class="mp-stack" data-id="${esc(id||'')}">${field('name','Nome do serviço',s.name,'text','required maxlength="150"')}${field('provider_name','Nome profissional / clínica',s.provider_name||state.profile?.full_name,'text','required maxlength="120"')}${select('category','Categoria',[['Veterinários','Veterinários'],['Banho & Tosa','Banho & Tosa'],['Hospedagem','Hospedagem'],['Dog Walkers','Dog Walkers']],s.category||'Veterinários')}<div class="mp-grid">${field('price','Valor (R$)',s.price_cents?(s.price_cents/100).toFixed(2):'','number','required min="0.01" max="100000" step="0.01"')}${field('duration','Duração (minutos)',s.duration_minutes||60,'number','required min="15" max="480" step="15"')}</div>${field('service_photo','Foto do serviço do dispositivo','','file','accept="image/jpeg,image/png,image/webp"')}${s.image_url?'<p class="mp-muted">Foto atual preservada até escolher outra.</p>':''}<p class="mp-muted">Novos serviços são salvos como inativos. Atendimentos comerciais só serão habilitados após concluir a configuração de operação e pagamento.</p><button class="mp-btn" type="submit">Salvar serviço</button></form>`);
 }
 async function orderStatus(id,status,code='') {
  const message=await result(db.rpc('mp_transition_order',{oid:id,next_status:status,delivery_code:code}));
@@ -130,6 +130,17 @@ const actions={
 };
 document.addEventListener('click',async event=>{const el=event.target.closest('[data-action]');if(!el)return;const action=actions[el.dataset.action];if(!action)return;event.preventDefault();if(el.disabled)return;el.disabled=true;try{await action(el);}catch(error){toast(friendly(error),true);}finally{if(el.isConnected)el.disabled=false;}});
 
+async function uploadImage(form,name) {
+ const file=form.elements.namedItem(name)?.files?.[0];
+ if(!file)return null;
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024)throw new Error('Escolha uma imagem JPG, PNG ou WebP de até 5 MB.');
+ if(!state.user)throw new Error('Entre na sua conta para enviar fotos.');
+ const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
+ const path=state.user.id+'/'+crypto.randomUUID()+'.'+ext;
+ await result(db.storage.from('mp-catalog-images').upload(path,file,{contentType:file.type,upsert:false}));
+ const {data}=db.storage.from('mp-catalog-images').getPublicUrl(path);
+ return data.publicUrl;
+}
 const forms={
  'mp-recovery-form':async(form,v)=>{const {error}=await db.auth.resetPasswordForEmail(v.email.trim(),{redirectTo:location.origin+route.home+'?recovery=1'});if(error)throw error;modal('Verifique seu e-mail',`<p>Se o endereço estiver cadastrado, você receberá um link para criar uma nova senha.</p>${btn('Voltar para entrar','login','mp-full')}`);},
  'mp-new-password-form':async(form,v)=>{if(v.password!==v.confirm)throw new Error('As senhas não coincidem.');const {error}=await db.auth.updateUser({password:v.password});if(error)throw error;closeModal();await loadUser();await render();toast('Senha alterada com sucesso.');},
@@ -177,12 +188,14 @@ const forms={
  },
  'mp-adopt-catalog-form':async(form,v)=>{const price=Math.round(Number(v.price)*100);const stock=Number(v.stock);if(!Number.isSafeInteger(price)||price<1||!Number.isInteger(stock)||stock<0)throw new Error('Informe preço e estoque válidos.');await result(db.rpc('mp_adopt_catalog_product',{p_source:form.dataset.id,p_store:form.dataset.store,p_price:price,p_stock:stock}));closeModal();await refresh();toast('Produto adicionado à sua loja.');},
  'mp-product-form':async(form,v)=>{
-  const photos=[1,2,3,4,5].map(i=>v['photo'+i]?.trim()).filter(Boolean);
-  if([v.image_url,...photos].some(url=>url&&!url.startsWith('https://')))throw new Error('Use links HTTPS nas fotos.');
+  const original=form.dataset.id?await result(db.from('mp_products').select('image_url,images').eq('id',form.dataset.id).single()):{};
+  const main=await uploadImage(form,'main_photo');
+  const added=(await Promise.all([1,2,3,4,5].map(i=>uploadImage(form,'photo'+i)))).filter(Boolean);
+  const photos=added.length?added:(original.images||[]);
   const cents=value=>value===''||value==null?null:Math.round(Number(value)*100);
   const numeric=value=>value===''||value==null?null:Number(value);
   const on=name=>form.elements.namedItem(name)?.checked===true;
-  const payload={store_id:form.dataset.store,name:v.name.trim(),category:v.category,price_cents:cents(v.price),old_price_cents:cents(v.old_price),stock:Number(v.stock),min_stock:Number(v.min_stock||0),image_url:v.image_url.trim(),images:photos,ean:v.ean.trim(),sku:v.sku.trim(),brand:v.brand.trim(),description:v.description.trim(),batch_code:v.batch_code.trim(),expiry_date:v.expiry_date||null,weight_kg:numeric(v.weight_kg),height_cm:numeric(v.height_cm),width_cm:numeric(v.width_cm),depth_cm:numeric(v.depth_cm),active:on('active'),auto_stock:on('auto_stock'),pickup_enabled:on('pickup_enabled'),delivery_enabled:on('delivery_enabled'),requires_prescription:on('requires_prescription')};
+  const payload={store_id:form.dataset.store,name:v.name.trim(),category:v.category,price_cents:cents(v.price),old_price_cents:cents(v.old_price),stock:Number(v.stock),min_stock:Number(v.min_stock||0),image_url:main||original.image_url||'',images:photos,ean:v.ean.trim(),sku:v.sku.trim(),brand:v.brand.trim(),description:v.description.trim(),batch_code:v.batch_code.trim(),expiry_date:v.expiry_date||null,weight_kg:numeric(v.weight_kg),height_cm:numeric(v.height_cm),width_cm:numeric(v.width_cm),depth_cm:numeric(v.depth_cm),active:on('active'),auto_stock:on('auto_stock'),pickup_enabled:on('pickup_enabled'),delivery_enabled:on('delivery_enabled'),requires_prescription:on('requires_prescription')};
   if(!payload.name||!Number.isFinite(payload.price_cents)||payload.price_cents<1)throw new Error('Informe nome e preço válido.');
   const admin=state.roles.includes('admin');
   if(!admin){payload.approval_status='pending';payload.active=false;payload.submitted_by=state.user.id;}
@@ -190,7 +203,7 @@ const forms={
   closeModal();await refresh();toast('Produto salvo no catálogo.');
  },
  'mp-store-form':async(form,v)=>{await result(db.from('mp_stores').update({name:v.name.trim(),address:v.address.trim(),phone:v.phone.trim()}).eq('id',form.dataset.id));await refresh();toast('Perfil da loja salvo.');},
- 'mp-service-form':async(form,v)=>{if(v.image_url&&!v.image_url.startsWith('https://'))throw new Error('Use uma imagem com HTTPS.');const payload={provider_id:state.user.id,name:v.name.trim(),provider_name:v.provider_name.trim(),category:v.category,price_cents:Math.round(Number(v.price)*100),duration_minutes:Number(v.duration),image_url:v.image_url.trim()};await result(form.dataset.id?db.from('mp_services').update(payload).eq('id',form.dataset.id):db.from('mp_services').insert({...payload,active:false}));await refresh();toast('Serviço salvo.');},
+ 'mp-service-form':async(form,v)=>{const existing=form.dataset.id?await result(db.from('mp_services').select('image_url').eq('id',form.dataset.id).single()):{};const image=await uploadImage(form,'service_photo');const payload={provider_id:state.user.id,name:v.name.trim(),provider_name:v.provider_name.trim(),category:v.category,price_cents:Math.round(Number(v.price)*100),duration_minutes:Number(v.duration),image_url:image||existing.image_url||''};await result(form.dataset.id?db.from('mp_services').update(payload).eq('id',form.dataset.id):db.from('mp_services').insert({...payload,active:false}));await refresh();toast('Serviço salvo.');},
  'mp-message-form':async(form,v)=>{await result(db.from('mp_messages').insert({order_id:form.dataset.id,sender_id:state.user.id,body:v.body.trim()}));await orderDetails(form.dataset.id);toast('Mensagem enviada no pedido.');},
  'mp-clinical-form':async(form,v)=>{await result(db.from('mp_clinical_notes').insert({appointment_id:form.dataset.id,provider_id:state.user.id,body:v.body.trim()}));await clinicalModal(form.dataset.id);toast('Anotação salva.');},
 };
