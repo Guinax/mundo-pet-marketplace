@@ -62,7 +62,7 @@ async function productModal(id,storeId) {
  const price=n=>n==null?'':(n/100).toFixed(2);
  modal(id?'Editar produto':'Cadastrar produto',`<form id="mp-product-form" class="mp-stack" data-id="${esc(id||'')}" data-store="${esc(storeId)}">
  ${section('Fotos do produto',field('main_photo','Foto principal — tirar foto ou escolher arquivo','','file','accept="image/jpeg,image/png,image/webp" capture="environment"')+[1,2,3,4,5].map(i=>field('photo'+i,'Foto adicional '+i,'','file','accept="image/jpeg,image/png,image/webp"')).join('')+(p.image_url?`<p class="mp-muted">Foto principal atual preservada até escolher outra.</p>`:'')+(p.images?.length?`<p class="mp-muted">Fotos adicionais atuais preservadas até escolher novas.</p>`:''))}
- ${section('Informações básicas',field('name','Nome completo',p.name||'','text','required maxlength="150"')+field('ean','Código de barras / QR Code',p.ean||'')+`<button type="button" class="mp-btn outline mp-full" data-action="scan-product-code">${icon('qr_code_scanner')} Ler código com a câmera</button><p class="mp-muted">Aponte para o QR Code ou código de barras. Também é possível digitar o código manualmente.</p>`+field('sku','SKU',p.sku||'')+field('brand','Marca',p.brand||'')+select('category','Categoria',[['Pet Shops','Pet Shops'],['Farmácia','Farmácia'],['Rações','Rações'],['Brinquedos','Brinquedos'],['Higiene','Higiene'],['Acessórios','Acessórios']],p.category||'Pet Shops'))}
+ ${section('Informações básicas',field('name','Nome completo',p.name||'','text','required maxlength="150"')+field('ean','Código de barras / QR Code',p.ean||'')+`<button type="button" class="mp-btn outline mp-full" data-action="scan-product-code" data-scan-mode="qr">${icon('qr_code_scanner')} Ler QR Code</button><button type="button" class="mp-btn outline mp-full" data-action="scan-product-code" data-scan-mode="barcode">${icon('barcode')} Ler código de barras (EAN/UPC)</button><p class="mp-muted">Aponte para o QR Code ou código de barras. Também é possível digitar o código manualmente.</p>`+field('sku','SKU',p.sku||'')+field('brand','Marca',p.brand||'')+select('category','Categoria',[['Pet Shops','Pet Shops'],['Farmácia','Farmácia'],['Rações','Rações'],['Brinquedos','Brinquedos'],['Higiene','Higiene'],['Acessórios','Acessórios']],p.category||'Pet Shops'))}
  ${section('Preço e disponibilidade',field('price','Preço de venda (R$)',price(p.price_cents),'number','required min="0.01" step="0.01"')+field('old_price','Preço anterior (R$)',price(p.old_price_cents),'number','min="0" step="0.01"')+checked('active','Produto ativo',p.active!==false))}
  ${section('Estoque e logística',field('stock','Estoque atual',p.stock??0,'number','required min="0" step="1"')+field('min_stock','Alerta mínimo',p.min_stock??5,'number','min="0" step="1"')+field('batch_code','Lote',p.batch_code||'')+field('expiry_date','Validade',p.expiry_date||'','date')+checked('auto_stock','Baixa automática',p.auto_stock!==false)+checked('pickup_enabled','Retirada na loja',p.pickup_enabled!==false)+checked('delivery_enabled','Entrega',p.delivery_enabled!==false))}
  ${section('Dimensões',field('weight_kg','Peso (kg)',p.weight_kg||'','number','min="0" step="0.01"')+field('height_cm','Altura (cm)',p.height_cm||'','number','min="0" step="0.1"')+field('width_cm','Largura (cm)',p.width_cm||'','number','min="0" step="0.1"')+field('depth_cm','Profundidade (cm)',p.depth_cm||'','number','min="0" step="0.1"'))}
@@ -99,18 +99,19 @@ function stopProductScan(){
  if(productScanStream){productScanStream.getTracks().forEach(track=>track.stop());productScanStream=null;}
  document.getElementById('mp-product-scan-view')?.remove();
 }
-async function scanProductCode(){
+async function scanProductCode(el){
  const form=document.getElementById('mp-product-form');
  if(!form)throw new Error('Abra o cadastro de produto primeiro.');
  if(!navigator.mediaDevices?.getUserMedia||!('BarcodeDetector' in window))throw new Error('Este navegador não oferece leitura automática. Digite o código manualmente ou tente no Chrome atualizado.');
  const supported=await BarcodeDetector.getSupportedFormats();
- const formats=['qr_code','ean_13','ean_8','upc_a','upc_e','code_128','itf'].filter(x=>supported.includes(x));
+ const mode=el?.dataset.scanMode||'barcode';
+ const formats=(mode==='qr'?['qr_code']:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','codabar','data_matrix','pdf417']).filter(x=>supported.includes(x));
  if(!formats.length)throw new Error('Leitor de códigos indisponível neste dispositivo.');
  stopProductScan();
  const detector=new BarcodeDetector({formats});
  const box=document.createElement('div');
  box.id='mp-product-scan-view';box.className='mp-card mp-stack';
- box.innerHTML='<strong>Leitura pela câmera</strong><video autoplay playsinline muted style="width:100%;max-height:260px;object-fit:cover;border-radius:12px"></video><button type="button" class="mp-btn outline" data-action="stop-product-scan">Fechar câmera</button>';
+ box.innerHTML='<strong>'+ (mode==='qr'?'Aponte para o QR Code':'Aponte para as barras do produto') +'</strong><video autoplay playsinline muted style="width:100%;max-height:260px;object-fit:cover;border-radius:12px"></video><button type="button" class="mp-btn outline" data-action="stop-product-scan">Fechar câmera</button>';
  form.querySelector('[name="ean"]').closest('.mp-field')?.after(box);
  if(!box.isConnected)form.prepend(box);
  try{
