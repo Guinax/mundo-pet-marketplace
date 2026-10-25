@@ -1,11 +1,11 @@
 import { db,result,state,loadPublic,loadUser,can,money,dateTime,statusText,cart,saveCart,orderRequestKey,toggleFavorite,validCPF,formObject } from './data.js';
 import { esc,icon,btn,route,field,select,textarea,card,badge,empty,shell,modal,closeModal,toast } from './ui.js';
-import { home,updateCatalog,tutor,booking,checkout,storePage,vetPage,courierPage,adminPage,petEditor } from './pages.js';
+import { home,updateCatalog,tutor,booking,checkout,storePage,vetPage,courierPage,adminPage,petEditor,specialtyPage } from './pages.js';
 
 const path=location.pathname;
-const page=path.includes('cadastro_de_tutor')?'tutor':path.includes('agendamento_de_servi')?'booking':path.includes('carrinho_checkout')?'cart':path.includes('administrativo')?'admin':path.includes('entregador_corridas')?'courier':path.includes('pet_shop_lojista')?'store':path.includes('veterin_rio_agenda')?'vet':'home';
+const page=path.includes('hotel_hospedagem')?'hotel':path.includes('dog_walkers_passeios')?'walkers':path.includes('mundo_pet_farmacia')?'pharmacy':path.includes('cadastro_de_tutor')?'tutor':path.includes('agendamento_de_servi')?'booking':path.includes('carrinho_checkout')?'cart':path.includes('administrativo')?'admin':path.includes('entregador_corridas')?'courier':path.includes('pet_shop_lojista')?'store':path.includes('veterin_rio_agenda')?'vet':'home';
 let filter='';let search='';let rendering=0;let activeOrder=null;let openingAccount=false;
-const renderers={home,tutor,booking,cart:checkout,store:storePage,vet:vetPage,courier:courierPage,admin:adminPage};
+const renderers={home,tutor,booking,cart:checkout,store:storePage,vet:vetPage,courier:courierPage,admin:adminPage,hotel:()=>specialtyPage('hotel'),walkers:()=>specialtyPage('walkers'),pharmacy:()=>specialtyPage('pharmacy')};
 async function render() {
  const token=++rendering;
  try {
