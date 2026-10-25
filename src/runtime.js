@@ -12,6 +12,7 @@ async function updateDeliveryQuote(){
  const status=document.getElementById('mp-delivery-quote-result'),value=document.getElementById('mp-shipping-value'),grand=document.getElementById('mp-grand-total'),actions=document.getElementById('mp-payment-actions');
  if(!status)return;
  const key=deliveryFingerprint(),seq=++deliverySeq;deliveryQuote=null;deliveryQuoteKey='';
+ const retry=document.getElementById('mp-retry-shipping');if(retry)retry.hidden=true;
  if(actions)actions.querySelectorAll('button').forEach(b=>b.disabled=true);
  if(value)value.textContent='Calculando…';if(grand)grand.textContent='Calculando…';
  const items=cart(),a=state.profile?.address||{};
@@ -30,7 +31,7 @@ async function updateDeliveryQuote(){
  if(value)value.textContent=money(data.delivery_cents);
  if(grand)grand.textContent=money(subtotal+data.delivery_cents);
  if(actions)actions.querySelectorAll('button').forEach(b=>b.disabled=false);
- }catch(err){if(seq!==deliverySeq)return;status.textContent=err?.message||'Frete indisponível. Confira o endereço completo de entrega e da loja.';if(value)value.textContent='Indisponível';}
+ }catch(err){if(seq!==deliverySeq)return;status.textContent=err?.message||'Frete indisponível. Confira o endereço completo de entrega e da loja.';if(value)value.textContent='Indisponível';const retry=document.getElementById('mp-retry-shipping');if(retry)retry.hidden=false;}
 }
 
 const renderers={home,tutor,booking,cart:checkout,store:storePage,vet:vetPage,courier:courierPage,admin:adminPage,hotel:()=>specialtyPage('hotel'),walkers:()=>specialtyPage('walkers'),pharmacy:()=>specialtyPage('pharmacy')};
@@ -194,6 +195,7 @@ const actions={
  apply:el=>applicationModal(el.dataset.role||'store'),
  'edit-address':()=>{if(requireLogin())location.href=route.tutor;},
  'add-cart':async el=>{const p=state.products.find(p=>p.id===el.dataset.id);if(!p||p.stock<1)throw new Error('Produto indisponível.');const items=cart();const other=items.map(i=>state.products.find(p=>p.id===i.product_id)).some(x=>x&&x.store_id!==p.store_id);if(other)throw new Error('Finalize o carrinho da outra loja antes de adicionar este produto.');const old=items.find(i=>i.product_id===p.id);if(old){if(old.quantity>=Math.min(p.stock,99))throw new Error('Limite de estoque atingido.');old.quantity++;}else items.push({product_id:p.id,quantity:1});saveCart(items);await render();toast('Produto adicionado ao carrinho.');},
+ 'buy-now':async el=>{await actions['add-cart'](el);location.href=route.cart;},
  favorite:async el=>{toggleFavorite(el.dataset.id);updateCatalog(filter,search);toast('Favoritos atualizados.');},
  filter:el=>{filter=el.dataset.filter;document.querySelectorAll('.mp-category').forEach(n=>n.classList.toggle('active',n.dataset.filter===filter));updateCatalog(filter,search);document.getElementById('mp-catalog')?.scrollIntoView({behavior:'smooth',block:'start'});},
  'clear-filter':()=>{filter='';search='';if(document.getElementById('mp-search'))document.getElementById('mp-search').value='';document.querySelectorAll('.mp-category').forEach(n=>n.classList.remove('active'));updateCatalog();},
@@ -202,7 +204,7 @@ const actions={
  'edit-pet':el=>{const p=state.pets.find(p=>p.id===el.dataset.id);modal('Editar pet',petEditor(p));},
  'cart-quantity':async el=>{const items=cart();const item=items.find(i=>i.product_id===el.dataset.id);if(!item)return;const qty=item.quantity+Number(el.dataset.change);const p=state.products.find(p=>p.id===item.product_id);if(qty>Math.min(p?.stock||0,99))throw new Error('Quantidade maior que o estoque disponível.');item.quantity=qty;saveCart(items);await render();},
  'remove-cart':async el=>{saveCart(cart().filter(i=>i.product_id!==el.dataset.id));await render();},
- checkout:async(el)=>{if(!requireLogin())return;const a=state.profile?.address;if(!a?.street||!a.number||!a.city||!a.state)throw new Error('Complete o endereço no perfil.');const items=cart();if(!items.length)throw new Error('Seu carrinho está vazio.');if(!deliveryQuote||deliveryQuoteKey!==deliveryFingerprint())throw new Error('Aguarde o cálculo automático do frete antes de pagar.');const method=el.dataset.method;if(!['infinitepay_pix','infinitepay_card'].includes(method))throw new Error('Selecione Pix ou cartão.');const {data,error}=await db.functions.invoke('mp-secure-checkout',{body:{cart:items,request_id:orderRequestKey(),payment_method:method}});if(error||!data?.url){let info=data;try{if(error?.context?.json)info=await error.context.json();}catch{}const code=info?.error;const details={checkout_not_configured:'Configuração de pagamento ou frete incompleta no servidor.',authentication_required:'Entre novamente na sua conta para continuar.',invalid_session:'Sua sessão expirou. Saia da conta e entre novamente.',invalid_checkout:'Dados do pedido inválidos. Atualize o carrinho.',product_unavailable:'Produto indisponível. Atualize o carrinho.',multiple_stores:'Finalize produtos de uma loja por vez.',store_unavailable:'A loja está fechada ou sem endereço cadastrado.',delivery_address_incomplete:'Complete o endereço de entrega no seu perfil.',shipping_provider_failed:'A rota não pôde ser calculada. Confira o endereço completo da loja e do cliente.',route_not_found:'O Google Maps não encontrou uma rota. Confira os endereços.',order_creation_failed:'Não foi possível criar o pedido no banco de dados.',payment_link_failed:'O link da InfinitePay não pôde ser gerado. Verifique a integração financeira.',payment_url_invalid:'A InfinitePay devolveu um endereço não reconhecido.'};throw new Error(details[code]||('Falha ao finalizar o pedido ('+(code||'conexão')+'). Tente novamente.'));}const url=new URL(data.url);if(url.protocol!=='https:'||!(url.hostname==='checkout.infinitepay.com.br'||url.hostname==='infinitepay.io'||url.hostname.endsWith('.infinitepay.io')))throw new Error('Link de pagamento inválido.');location.assign(url.href);},
+ checkout:async(el)=>{if(!requireLogin())return;const a=state.profile?.address;if(!a?.street||!a.number||!a.city||!a.state)throw new Error('Complete o endereço no perfil.');const items=cart();if(!items.length)throw new Error('Seu carrinho está vazio.');if(!deliveryQuote||deliveryQuoteKey!==deliveryFingerprint())throw new Error('Aguarde o cálculo automático do frete antes de pagar.');const method=el.dataset.method;if(!['infinitepay_pix','infinitepay_card'].includes(method))throw new Error('Selecione Pix ou cartão.');const {data,error}=await db.functions.invoke('mp-secure-checkout',{body:{cart:items,request_id:orderRequestKey(),payment_method:method}});if(error||!data?.url){let info=data;try{if(error?.context?.json)info=await error.context.json();}catch{}const code=info?.error;const details={checkout_not_configured:'Configuração de pagamento ou frete incompleta no servidor.',authentication_required:'Entre novamente na sua conta para continuar.',invalid_session:'Sua sessão expirou. Saia da conta e entre novamente.',invalid_checkout:'Dados do pedido inválidos. Atualize o carrinho.',product_unavailable:'Produto indisponível. Atualize o carrinho.',multiple_stores:'Finalize produtos de uma loja por vez.',store_unavailable:'A loja está fechada ou sem endereço cadastrado.',delivery_address_incomplete:'Complete o endereço de entrega no seu perfil.',shipping_provider_failed:'A rota não pôde ser calculada. Confira o endereço completo da loja e do cliente.',route_not_found:'O Google Maps não encontrou uma rota. Confira os endereços.',order_creation_failed:'Não foi possível criar o pedido no banco de dados.',payment_link_failed:'O link da InfinitePay não pôde ser gerado. Verifique a integração financeira.',payment_url_invalid:'A InfinitePay devolveu um endereço não reconhecido.'};throw new Error(details[code]||('Falha ao finalizar o pedido ('+(code||'conexão')+'). Tente novamente.'));}const url=new URL(data.url);if(url.protocol!=='https:'||!(url.hostname==='checkout.infinitepay.com.br'||url.hostname==='infinitepay.io'||url.hostname.endsWith('.infinitepay.io')))throw new Error('Link de pagamento inválido.');window.top.location.assign(url.href);},
  'order-status':el=>orderStatus(el.dataset.id,el.dataset.status),
  'order-details':el=>orderDetails(el.dataset.id),
  'print-order':()=>{if(!activeOrder)return;const o=activeOrder;const w=window.open('','_blank');if(!w)throw new Error('Permita abrir a janela de impressão no navegador.');w.document.write(`<!doctype html><html lang="pt-BR"><head><title>Pedido Mundo Pet</title><style>body{font:16px system-ui;padding:28px;max-width:700px}h1{color:#006c49}li{margin:10px 0}</style></head><body><h1>Mundo Pet</h1><h2>Pedido #${o.id.slice(0,8)}</h2><p>${o.is_demo?'DEMONSTRAÇÃO — SEM COBRANÇA':'Comprovante do pedido'}</p><p>${dateTime(o.created_at)}</p><ul>${o.mp_order_items.map(i=>`<li>${i.quantity}× ${esc(i.name)} • ${money(i.unit_cents*i.quantity)}</li>`).join('')}</ul>${o.discount_cents?`<p>Desconto do cupom: − ${money(o.discount_cents)}</p>`:''}<strong>Total: ${money(o.total_cents)}</strong><p>Pagamento: ${o.payment_status==='paid'?'confirmado':'não recebido'}</p><p>Entrega: ${esc(o.address.street)}, ${esc(o.address.number)} • ${esc(o.address.city)}</p><button onclick="window.print()">Imprimir</button></body></html>`);w.document.close();},
@@ -216,6 +218,7 @@ const actions={
  'product-editor':el=>productModal(el.dataset.id,el.dataset.store),
  'toggle-product':async el=>{if(!state.roles.includes('admin'))throw new Error('Ativação depende da aprovação do administrador.');await result(db.from('mp_products').update({active:el.dataset.active==='true'}).eq('id',el.dataset.id));await refresh();toast('Produto atualizado.');},
  'toggle-online':async()=>{if(!state.profile){await result(db.from('mp_profiles').insert({user_id:state.user.id,full_name:state.user.email,online:true}));}else await result(db.from('mp_profiles').update({online:!state.profile.online}).eq('user_id',state.user.id));await refresh();},
+ 'retry-shipping':async()=>{await updateDeliveryQuote();},
  'quote-shipping':async()=>{if(!requireLogin())return;const items=cart();if(!items.length)throw new Error('Adicione produtos ao carrinho.');const product=state.products.find(p=>p.id===items[0].product_id);if(!product)throw new Error('Produto indisponível.');const el=document.getElementById('mp-delivery-quote-result');if(el)el.textContent='Calculando distância da loja até seu endereço…';const {data,error}=await db.functions.invoke('mp-delivery-quote',{body:{store_id:product.store_id}});if(error){if(el)el.textContent='Não foi possível calcular o frete. Verifique o endereço e tente novamente.';throw new Error('Frete indisponível no momento.');}if(!data?.available){if(el)el.textContent='Entrega indisponível. Confira o endereço e a configuração de rotas.';return;}if(el)el.textContent='Frete estimado: '+money(data.delivery_cents)+' • '+(data.distance_m/1000).toFixed(2).replace('.',',')+' km pela rota. Valor sujeito à confirmação no checkout.';},
  'map-route':async el=>{const o=await result(db.from('mp_orders').select('address').eq('id',el.dataset.id).single());const a=o.address;const dest=[a.street,a.number,a.city,a.state].filter(Boolean).join(', ');window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest),'_blank','noopener,noreferrer');},
  'appointment-status':async el=>{await result(db.rpc('mp_transition_appointment',{aid:el.dataset.id,next_status:el.dataset.status}));await refresh();toast('Agendamento atualizado.');},
@@ -315,6 +318,22 @@ const withDeadline=(operation,ms=9000)=>Promise.race([
  Promise.resolve().then(operation),
  new Promise((_,reject)=>setTimeout(()=>reject(new Error('Tempo limite de conexão excedido. Confira a conexão e tente novamente.')),ms))
 ]);
+async function confirmPaymentReturn(){
+ const params=new URLSearchParams(location.search),nsu=params.get('order_nsu');
+ if(page!=='cart'||!nsu||!/^mp-[0-9a-f-]{36}$/i.test(nsu))return;
+ if(!state.user){toast('Entre na sua conta para confirmar o pagamento e acompanhar o pedido.',true);return;}
+ const id=nsu.slice(3);
+ try{
+  const body={action:'check',order_id:id};
+  if(params.has('transaction_nsu'))body.transaction_nsu=params.get('transaction_nsu');
+  if(params.has('slug'))body.slug=params.get('slug');
+  const {data,error}=await db.functions.invoke('mp-infinitepay',{body});
+  if(error)throw error;
+  if(data?.paid===true){saveCart([]);await refresh();toast('Pagamento confirmado! Acompanhe o pedido em Meus pedidos.');}
+  else toast('Pagamento ainda não confirmado. Atualize Meus pedidos em instantes.');
+ }catch{toast('Não foi possível consultar o pagamento agora. Confira em Meus pedidos.',true);}
+ const clean=new URL(location.href);['receipt_url','order_nsu','slug','capture_method','transaction_nsu'].forEach(k=>clean.searchParams.delete(k));history.replaceState({},'',clean.pathname+clean.search+clean.hash);
+}
 async function init(){
  await render();
  const {data:{session},error}=await withDeadline(()=>db.auth.getSession());if(error)throw error;state.user=session?.user||null;
@@ -324,6 +343,7 @@ async function init(){
  else if(authParams.has('login')){if(!state.user)authModal();else toast('E-mail confirmado. Sua conta está conectada.');}
  const callbackError=new URLSearchParams(location.hash.slice(1)).get('error_description')||authParams.get('error_description');
  if(callbackError)toast('Link inválido ou expirado. Use Esqueci minha senha para solicitar outro.',true);
+ await confirmPaymentReturn();
 }
 db.auth.onAuthStateChange((event,session)=>{
  if(event==='PASSWORD_RECOVERY'){state.user=session?.user||null;setTimeout(newPasswordModal,0);}
