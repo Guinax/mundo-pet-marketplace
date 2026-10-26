@@ -10,6 +10,7 @@ import { productImages, productUrl } from './catalog.js';
 const path=location.pathname;
 const page=path.includes('mundo_pet_produto')?'product':path.includes('mundo_pet_catalogo')?'catalog':path.includes('mundo_pet_banho_tosa')?'grooming':path.includes('mundo_pet_veterinarios')?'veterinary':path.includes('hotel_hospedagem')?'hotel':path.includes('dog_walkers_passeios')?'walkers':path.includes('mundo_pet_farmacia')?'pharmacy':path.includes('cadastro_de_tutor')?'tutor':path.includes('agendamento_de_servi')?'booking':path.includes('carrinho_checkout')?'cart':path.includes('administrativo')?'admin':path.includes('entregador_corridas')?'courier':path.includes('pet_shop_lojista')?'store':path.includes('veterin_rio_agenda')?'vet':'home';
 let filter=new URLSearchParams(location.search).get('category')||'';let search=new URLSearchParams(location.search).get('q')||'';let catalogOptions={sort:'relevance',brand:'',inStock:false,maxPrice:0};let detailQuantity=1;let rendering=0;let activeOrder=null;let openingAccount=false;
+let locationWatch=null;let locationSent=0;
 let deliveryQuote=null;let deliveryQuoteKey='';let deliverySeq=0;
 function deliveryFingerprint(){const items=cart();const a=state.profile?.address||{};return JSON.stringify({uid:state.user?.id||'',items,address:a});}
 async function updateDeliveryQuote(){
@@ -312,7 +313,7 @@ const actions={
  'product-editor':el=>productModal(el.dataset.id,el.dataset.store),
  'toggle-product':async el=>{if(!state.roles.includes('admin'))throw new Error('Ativação depende da aprovação do administrador.');await result(db.from('mp_products').update({active:el.dataset.active==='true',...(el.dataset.active==='true'?{approval_status:'approved'}:{})}).eq('id',el.dataset.id).select('id').single());await refresh();toast('Produto atualizado.');},
  'share-courier-location':()=>shareCourierLocation(),
- 'toggle-online':async()=>{if(!state.profile){await result(db.from('mp_profiles').insert({user_id:state.user.id,full_name:state.user.email,online:true,presence_updated_at:new Date().toISOString()}));}else await result(db.from('mp_profiles').update({online:!state.profile.online,presence_updated_at:new Date().toISOString()}).eq('user_id',state.user.id));await refresh();},
+ 'toggle-online':async()=>{if(!state.profile){await result(db.from('mp_profiles').insert({user_id:state.user.id,full_name:state.user.email,online:true,presence_updated_at:new Date().toISOString()}));}else await result(db.from('mp_profiles').update({online:!state.profile.online,presence_updated_at:new Date().toISOString()}).eq('user_id',state.user.id));await refresh();if(!state.profile?.online&&locationWatch!==null){navigator.geolocation.clearWatch(locationWatch);locationWatch=null;}},
  'retry-shipping':async()=>{await updateDeliveryQuote();},
  'quote-shipping':async()=>{if(!requireLogin())return;const items=cart();if(!items.length)throw new Error('Adicione produtos ao carrinho.');const product=state.products.find(p=>p.id===items[0].product_id);if(!product)throw new Error('Produto indisponível.');const el=document.getElementById('mp-delivery-quote-result');if(el)el.textContent='Calculando distância da loja até seu endereço…';const {data,error}=await db.functions.invoke('mp-delivery-quote',{body:{store_id:product.store_id}});if(error){if(el)el.textContent='Não foi possível calcular o frete. Verifique o endereço e tente novamente.';throw new Error('Frete indisponível no momento.');}if(!data?.available){if(el)el.textContent='Entrega indisponível. Confira o endereço e a configuração de rotas.';return;}if(el)el.textContent='Frete estimado: '+money(data.delivery_cents)+' • '+(data.distance_m/1000).toFixed(2).replace('.',',')+' km pela rota. Valor sujeito à confirmação no checkout.';},
  'map-route':async el=>{const o=await result(db.from('mp_orders').select('address').eq('id',el.dataset.id).single());const a=o.address;const dest=[a.street,a.number,a.city,a.state].filter(Boolean).join(', ');window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest),'_blank','noopener,noreferrer');},
@@ -439,7 +440,7 @@ async function init(){
 db.auth.onAuthStateChange((event,session)=>{
  if(event==='PASSWORD_RECOVERY'){state.user=session?.user||null;setTimeout(newPasswordModal,0);}
  if(event==='TOKEN_REFRESHED')state.user=session?.user||null;
- if(event==='SIGNED_OUT'){state.user=null;setTimeout(()=>{loadUser().then(render);},0);}
+ if(event==='SIGNED_OUT'){if(locationWatch!==null){navigator.geolocation?.clearWatch(locationWatch);locationWatch=null;}state.user=null;setTimeout(()=>{loadUser().then(render);},0);}
  if(event==='SIGNED_IN'&&!state.user&&!openingAccount){state.user=session?.user||null;setTimeout(()=>{loadUser().then(render);},0);}
 });
 init().catch(async error=>{
@@ -456,12 +457,12 @@ if(['store','vet','courier','admin'].includes(page))setInterval(()=>{
  refresh().catch(error=>toast(friendly(error),true));
 },15000);
 
-let locationWatch=null;let locationSent=0;
 async function shareCourierLocation(){
  if(!state.user||!can('courier')||!state.profile?.online)throw Error('Ative sua disponibilidade para compartilhar localização.');
  if(!navigator.geolocation)throw Error('Seu navegador não oferece localização.');
  if(locationWatch!==null){navigator.geolocation.clearWatch(locationWatch);locationWatch=null;toast('Compartilhamento encerrado.');return;}
  locationWatch=navigator.geolocation.watchPosition(async position=>{
+  if(!state.user||!state.profile?.online||!can('courier')){if(locationWatch!==null)navigator.geolocation.clearWatch(locationWatch);locationWatch=null;return;}
   if(Date.now()-locationSent<10000)return;locationSent=Date.now();
   try{const active=await result(db.from('mp_orders').select('id').eq('courier_id',state.user.id).in('status',['assigned','delivering']));
    if(!active.length)return;
