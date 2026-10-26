@@ -1,3 +1,4 @@
+import {createAdminHandlers,adminOrderControls} from './admin-console.js';
 import {bindAdminFilters} from './admin-design.js';
 import { approvedPaymentUrl, paymentActions, cartAfterPayment, paymentIssueMessage } from './payments.js';
 import { db,result,state,loadPublic,loadUser,can,money,dateTime,statusText,cart,saveCart,orderRequestKey,toggleFavorite,validCPF,formObject } from './data.js';
@@ -149,7 +150,7 @@ async function orderDetails(id) {
  const o=await result(db.from('mp_orders').select('*,mp_order_items(*)').eq('id',id).single());
  const [codes,messages]=await Promise.all([result(db.from('mp_delivery_codes').select('code').eq('order_id',id).maybeSingle()),result(db.from('mp_messages').select('*').eq('order_id',id).order('created_at').limit(100))]);
  activeOrder=o;
- modal('Acompanhamento do pedido',`<div class="mp-stack" style="margin-top:16px"><div class="mp-row mp-between"><strong>#MP-${o.id.slice(0,8).toUpperCase()}</strong>${badge(statusText(o.status))}</div><p class="mp-muted">${dateTime(o.created_at)} • ${o.is_demo?'Demonstração sem cobrança':'Pedido'}</p><div class="mp-stage"><span class="${['pending','preparing'].includes(o.status)?'current':''}">Loja</span><span class="${['ready','assigned'].includes(o.status)?'current':''}">Coleta</span><span class="${o.status==='delivering'?'current':''}">Em entrega</span><span class="${o.status==='delivered'?'current':''}">Concluído</span></div>${o.mp_order_items.map(i=>`<div class="mp-labelprice"><span>${i.quantity}× ${esc(i.name)}</span><span>${money(i.unit_cents*i.quantity)}</span></div>`).join('')}${o.discount_cents?`<p>Desconto do cupom: − ${money(o.discount_cents)}</p>`:''}<strong>Total: ${money(o.total_cents)}</strong><p class="mp-muted">Pagamento: ${o.payment_status==='paid'?'confirmado':'não recebido'}</p><p>${icon('location_on')} ${esc(o.address.street)}, ${esc(o.address.number)} – ${esc(o.address.city)}</p>${codes?card('Código de entrega',`<strong style="font-size:26px;letter-spacing:4px">${esc(codes.code)}</strong><p class="mp-muted">Informe ao entregador somente depois de receber seu pedido.</p>`):''}${btn('Atualizar acompanhamento','order-details','outline',`data-id="${o.id}"`)}${btn('Imprimir comprovante / etiqueta','print-order','outline',`data-id="${o.id}"`)}<hr class="mp-divider"><h3>Conversa do pedido</h3><div class="mp-stack">${messages.map(m=>`<div class="mp-banner"><small>${m.sender_id===state.user.id?'Você':'Participante do pedido'} • ${dateTime(m.created_at)}</small><p>${esc(m.body)}</p></div>`).join('')||'<p class="mp-muted">Nenhuma mensagem.</p>'}</div><form id="mp-message-form" data-id="${o.id}" class="mp-stack">${textarea('body','Mensagem','','required maxlength="1000"')}<button class="mp-btn" type="submit">Enviar mensagem</button></form></div>`);
+ modal('Acompanhamento do pedido',`<div class="mp-stack" style="margin-top:16px"><div class="mp-row mp-between"><strong>#MP-${o.id.slice(0,8).toUpperCase()}</strong>${badge(statusText(o.status))}</div><p class="mp-muted">${dateTime(o.created_at)} • ${o.is_demo?'Demonstração sem cobrança':'Pedido'}</p><div class="mp-stage"><span class="${['pending','preparing'].includes(o.status)?'current':''}">Loja</span><span class="${['ready','assigned'].includes(o.status)?'current':''}">Coleta</span><span class="${o.status==='delivering'?'current':''}">Em entrega</span><span class="${o.status==='delivered'?'current':''}">Concluído</span></div>${o.mp_order_items.map(i=>`<div class="mp-labelprice"><span>${i.quantity}× ${esc(i.name)}</span><span>${money(i.unit_cents*i.quantity)}</span></div>`).join('')}${o.discount_cents?`<p>Desconto do cupom: − ${money(o.discount_cents)}</p>`:''}<strong>Total: ${money(o.total_cents)}</strong><p class="mp-muted">Pagamento: ${o.payment_status==='paid'?'confirmado':'não recebido'}</p><p>${icon('location_on')} ${esc(o.address.street)}, ${esc(o.address.number)} – ${esc(o.address.city)}</p>${codes?card('Código de entrega',`<strong style="font-size:26px;letter-spacing:4px">${esc(codes.code)}</strong><p class="mp-muted">Informe ao entregador somente depois de receber seu pedido.</p>`):''}${btn('Atualizar acompanhamento','order-details','outline',`data-id="${o.id}"`)}${btn('Imprimir comprovante / etiqueta','print-order','outline',`data-id="${o.id}"`)}${adminOrderControls(o)}<hr class="mp-divider"><h3>Conversa do pedido</h3><div class="mp-stack">${messages.map(m=>`<div class="mp-banner"><small>${m.sender_id===state.user.id?'Você':'Participante do pedido'} • ${dateTime(m.created_at)}</small><p>${esc(m.body)}</p></div>`).join('')||'<p class="mp-muted">Nenhuma mensagem.</p>'}</div><form id="mp-message-form" data-id="${o.id}" class="mp-stack">${textarea('body','Mensagem','','required maxlength="1000"')}<button class="mp-btn" type="submit">Enviar mensagem</button></form></div>`);
 }
 async function clinicalModal(id) {
  const a=await result(db.from('mp_appointments').select('*,mp_pets(*)').eq('id',id).single());
@@ -160,7 +161,8 @@ async function clinicalModal(id) {
 async function serviceModal(id) {
  if(!requireLogin())return;
  const s=id?await result(db.from('mp_services').select('*').eq('id',id).single()):{};
- modal(id?'Editar serviço':'Novo serviço',`<form id="mp-service-form" class="mp-stack" data-id="${esc(id||'')}">${field('name','Nome do serviço',s.name,'text','required maxlength="150"')}${field('provider_name','Nome profissional / clínica',s.provider_name||state.profile?.full_name,'text','required maxlength="120"')}${select('category','Categoria',[['Veterinários','Veterinários'],['Banho & Tosa','Banho & Tosa'],['Hospedagem','Hospedagem'],['Dog Walkers','Dog Walkers'],['Farmácia','Farmácia']],s.category||'Veterinários')}<div class="mp-grid">${field('price','Valor (R$)',s.price_cents?(s.price_cents/100).toFixed(2):'','number','required min="0.01" max="100000" step="0.01"')}${field('duration','Duração (minutos)',s.duration_minutes||60,'number','required min="15" max="480" step="15"')}</div>${field('service_photo','Foto do serviço do dispositivo','','file','accept="image/jpeg,image/png,image/webp"')}${s.image_url?'<p class="mp-muted">Foto atual preservada até escolher outra.</p>':''}<p class="mp-muted">Novos serviços são salvos como inativos. Atendimentos comerciais só serão habilitados após concluir a configuração de operação e pagamento.</p><button class="mp-btn" type="submit">Salvar serviço</button></form>`);
+ const providers=state.roles.includes('admin')?await result(db.rpc('mp_admin_directory')):[];
+ modal(id?'Editar serviço':'Novo serviço',`<form id="mp-service-form" class="mp-stack" data-id="${esc(id||'')}">${providers.length?select('provider_id','Responsável pelo serviço',providers.filter(d=>d.roles.some(r=>['vet','store','admin'].includes(r))).map(d=>[d.user_id,d.name]),s.provider_id||state.user.id):''}${field('name','Nome do serviço',s.name,'text','required maxlength="150"')}${field('provider_name','Nome profissional / clínica',s.provider_name||state.profile?.full_name,'text','required maxlength="120"')}${select('category','Categoria',[['Veterinários','Veterinários'],['Banho & Tosa','Banho & Tosa'],['Hospedagem','Hospedagem'],['Dog Walkers','Dog Walkers'],['Farmácia','Farmácia']],s.category||'Veterinários')}<div class="mp-grid">${field('price','Valor (R$)',s.price_cents?(s.price_cents/100).toFixed(2):'','number','required min="0.01" max="100000" step="0.01"')}${field('duration','Duração (minutos)',s.duration_minutes||60,'number','required min="15" max="480" step="15"')}</div>${field('service_photo','Foto do serviço do dispositivo','','file','accept="image/jpeg,image/png,image/webp"')}${s.image_url?'<p class="mp-muted">Foto atual preservada até escolher outra.</p>':''}<p class="mp-muted">Novos serviços são salvos como inativos. Atendimentos comerciais só serão habilitados após concluir a configuração de operação e pagamento.</p><button class="mp-btn" type="submit">Salvar serviço</button></form>`);
 }
 async function orderStatus(id,status,code='') {
  const message=await result(db.rpc('mp_transition_order',{oid:id,next_status:status,delivery_code:code}));
@@ -242,10 +244,8 @@ async function addProduct(id,quantity=1){
 }
 function redrawCatalog(){updateCatalog(filter,search,catalogOptions);}
 bindAdminFilters();
+const adminHandlers=createAdminHandlers({refresh,orderDetails,uploadImage});
 const actions={
- 'admin-notifications':()=>{location.href=route.admin+'?tab=applications';},
- 'admin-commission-info':async()=>{if(!state.roles.includes('admin'))throw Error('Acesso restrito.');const policy=await result(db.from('mp_commission_policy').select('products_bps,services_bps').maybeSingle());modal('Regras de comissão',`<p>Produtos: ${policy?policy.products_bps/100+'%':'Não configurado'}</p><p>Serviços: ${policy?policy.services_bps/100+'%':'Não configurado'}</p><p class="mp-muted">Alterações globais de taxas e repasses automáticos ainda não estão habilitadas neste painel.</p>`);},
- 'admin-marketing-info':()=>modal('Marketing & campanhas','<p>A gestão de banners patrocinados e cupons globais ainda não está habilitada.</p><p class="mp-muted">O cupom MUNDOPET10 existente é exclusivo para pedidos de demonstração.</p>'),
  'scan-product-code':scanProductCode,
  'lookup-product-code':el=>lookupProductBarcode(document.getElementById('mp-product-form')?.elements.namedItem('ean')?.value),
  'stop-product-scan':stopProductScan,
@@ -310,17 +310,19 @@ const actions={
  'admin-new-store':()=>adminNewStore(),
  'admin-pick-store':el=>productModal('',el.dataset.id),
  'product-editor':el=>productModal(el.dataset.id,el.dataset.store),
- 'toggle-product':async el=>{if(!state.roles.includes('admin'))throw new Error('Ativação depende da aprovação do administrador.');await result(db.from('mp_products').update({active:el.dataset.active==='true'}).eq('id',el.dataset.id));await refresh();toast('Produto atualizado.');},
- 'toggle-online':async()=>{if(!state.profile){await result(db.from('mp_profiles').insert({user_id:state.user.id,full_name:state.user.email,online:true}));}else await result(db.from('mp_profiles').update({online:!state.profile.online}).eq('user_id',state.user.id));await refresh();},
+ 'toggle-product':async el=>{if(!state.roles.includes('admin'))throw new Error('Ativação depende da aprovação do administrador.');await result(db.from('mp_products').update({active:el.dataset.active==='true',...(el.dataset.active==='true'?{approval_status:'approved'}:{})}).eq('id',el.dataset.id).select('id').single());await refresh();toast('Produto atualizado.');},
+ 'share-courier-location':()=>shareCourierLocation(),
+ 'toggle-online':async()=>{if(!state.profile){await result(db.from('mp_profiles').insert({user_id:state.user.id,full_name:state.user.email,online:true,presence_updated_at:new Date().toISOString()}));}else await result(db.from('mp_profiles').update({online:!state.profile.online,presence_updated_at:new Date().toISOString()}).eq('user_id',state.user.id));await refresh();},
  'retry-shipping':async()=>{await updateDeliveryQuote();},
  'quote-shipping':async()=>{if(!requireLogin())return;const items=cart();if(!items.length)throw new Error('Adicione produtos ao carrinho.');const product=state.products.find(p=>p.id===items[0].product_id);if(!product)throw new Error('Produto indisponível.');const el=document.getElementById('mp-delivery-quote-result');if(el)el.textContent='Calculando distância da loja até seu endereço…';const {data,error}=await db.functions.invoke('mp-delivery-quote',{body:{store_id:product.store_id}});if(error){if(el)el.textContent='Não foi possível calcular o frete. Verifique o endereço e tente novamente.';throw new Error('Frete indisponível no momento.');}if(!data?.available){if(el)el.textContent='Entrega indisponível. Confira o endereço e a configuração de rotas.';return;}if(el)el.textContent='Frete estimado: '+money(data.delivery_cents)+' • '+(data.distance_m/1000).toFixed(2).replace('.',',')+' km pela rota. Valor sujeito à confirmação no checkout.';},
  'map-route':async el=>{const o=await result(db.from('mp_orders').select('address').eq('id',el.dataset.id).single());const a=o.address;const dest=[a.street,a.number,a.city,a.state].filter(Boolean).join(', ');window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest),'_blank','noopener,noreferrer');},
- 'appointment-status':async el=>{await result(db.rpc('mp_transition_appointment',{aid:el.dataset.id,next_status:el.dataset.status}));await refresh();toast('Agendamento atualizado.');},
+ 'appointment-status':async el=>{await result(db.rpc('mp_transition_appointment',{aid:el.dataset.id,next_status:el.dataset.status}));closeModal();await refresh();toast('Agendamento atualizado.');},
  clinical:el=>clinicalModal(el.dataset.id),
  'service-editor':el=>serviceModal(el.dataset.id),
  'toggle-service':async el=>{if(!can('admin'))throw new Error('A publicação depende da aprovação do administrador.');await result(db.rpc('mp_review_service',{p_service:el.dataset.id,p_approve:el.dataset.active==='true'}));await refresh();toast('Serviço atualizado.');},
- 'review-service':async el=>{if(!can('admin'))throw new Error('Acesso restrito.');await result(db.rpc('mp_review_service',{p_service:el.dataset.id,p_approve:el.dataset.approved==='true'}));await refresh();toast('Serviço analisado.');},
+ 'review-service':async el=>{if(!can('admin'))throw new Error('Acesso restrito.');await result(db.rpc('mp_review_service',{p_service:el.dataset.id,p_approve:el.dataset.approved==='true'}));closeModal();await refresh();toast('Serviço analisado.');},
  'review-application':async el=>{await result(db.rpc('mp_review_application',{aid:el.dataset.id,approved:el.dataset.approved==='true'}));await refresh();toast('Solicitação analisada.');},
+ ...adminHandlers.actions,
 };
 document.addEventListener('click',async event=>{const el=event.target.closest('[data-action]');if(!el)return;const action=actions[el.dataset.action];if(!action)return;event.preventDefault();if(el.disabled)return;el.disabled=true;try{await action(el);}catch(error){toast(friendly(error),true);}finally{if(el.isConnected)el.disabled=false;}});
 
@@ -397,9 +399,10 @@ const forms={
   closeModal();await refresh();toast('Produto salvo no catálogo.');
  },
  'mp-store-form':async(form,v)=>{await result(db.from('mp_stores').update({name:v.name.trim(),address:v.address.trim(),phone:v.phone.trim()}).eq('id',form.dataset.id));await refresh();toast('Perfil da loja salvo.');},
- 'mp-service-form':async(form,v)=>{const existing=form.dataset.id?await result(db.from('mp_services').select('image_url').eq('id',form.dataset.id).single()):{};const image=await uploadImage(form,'service_photo');const payload={provider_id:state.user.id,name:v.name.trim(),provider_name:v.provider_name.trim(),category:v.category,price_cents:Math.round(Number(v.price)*100),duration_minutes:Number(v.duration),image_url:image||existing.image_url||''};await result(form.dataset.id?db.from('mp_services').update(payload).eq('id',form.dataset.id):db.from('mp_services').insert({...payload,active:false}));await refresh();toast('Serviço salvo.');},
+ 'mp-service-form':async(form,v)=>{const existing=form.dataset.id?await result(db.from('mp_services').select('image_url,provider_id').eq('id',form.dataset.id).single()):{};const image=await uploadImage(form,'service_photo');const payload={provider_id:state.roles.includes('admin')?(v.provider_id||existing.provider_id||state.user.id):state.user.id,name:v.name.trim(),provider_name:v.provider_name.trim(),category:v.category,price_cents:Math.round(Number(v.price)*100),duration_minutes:Number(v.duration),image_url:image||existing.image_url||''};await result(form.dataset.id?db.from('mp_services').update(payload).eq('id',form.dataset.id):db.from('mp_services').insert({...payload,active:false}));closeModal();await refresh();toast('Serviço salvo.');},
  'mp-message-form':async(form,v)=>{await result(db.from('mp_messages').insert({order_id:form.dataset.id,sender_id:state.user.id,body:v.body.trim()}));await orderDetails(form.dataset.id);toast('Mensagem enviada no pedido.');},
  'mp-clinical-form':async(form,v)=>{await result(db.from('mp_clinical_notes').insert({appointment_id:form.dataset.id,provider_id:state.user.id,body:v.body.trim()}));await clinicalModal(form.dataset.id);toast('Anotação salva.');},
+ ...adminHandlers.forms,
 };
 document.addEventListener('submit',async event=>{const form=event.target;const handler=form.classList.contains('mp-delivery-form')?(f,v)=>orderStatus(f.dataset.id,'delivered',v.code):forms[form.id];if(!handler)return;event.preventDefault();const button=form.querySelector('[type="submit"]');if(button.disabled)return;button.disabled=true;try{await handler(form,formObject(form));}catch(error){const errorBox=form.querySelector('.mp-error');if(errorBox)errorBox.textContent=friendly(error);else toast(friendly(error),true);}finally{if(button.isConnected)button.disabled=false;}});
 document.addEventListener('input',event=>{if(event.target.id==='mp-search'){search=event.target.value;redrawCatalog();}});
@@ -452,3 +455,26 @@ if(['store','vet','courier','admin'].includes(page))setInterval(()=>{
  if(!state.user||document.hidden||document.querySelector('[role="dialog"]')||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;
  refresh().catch(error=>toast(friendly(error),true));
 },15000);
+
+let locationWatch=null;let locationSent=0;
+async function shareCourierLocation(){
+ if(!state.user||!can('courier')||!state.profile?.online)throw Error('Ative sua disponibilidade para compartilhar localização.');
+ if(!navigator.geolocation)throw Error('Seu navegador não oferece localização.');
+ if(locationWatch!==null){navigator.geolocation.clearWatch(locationWatch);locationWatch=null;toast('Compartilhamento encerrado.');return;}
+ locationWatch=navigator.geolocation.watchPosition(async position=>{
+  if(Date.now()-locationSent<10000)return;locationSent=Date.now();
+  try{const active=await result(db.from('mp_orders').select('id').eq('courier_id',state.user.id).in('status',['assigned','delivering']));
+   if(!active.length)return;
+   const rows=active.map(o=>({order_id:o.id,courier_id:state.user.id,latitude:position.coords.latitude,longitude:position.coords.longitude,accuracy_m:position.coords.accuracy,updated_at:new Date().toISOString()}));
+   await result(db.from('mp_courier_locations').upsert(rows));
+  }catch(error){toast(friendly(error),true);}
+ },()=>{if(locationWatch!==null)navigator.geolocation.clearWatch(locationWatch);locationWatch=null;toast('Não foi possível obter a localização. Confira a permissão do navegador.',true);},{enableHighAccuracy:true,maximumAge:15000,timeout:15000});
+ toast('Localização compartilhada durante as suas entregas. Toque novamente para encerrar.');
+}
+setInterval(async()=>{
+ if(page==='courier'&&state.user&&state.profile?.online&&document.visibilityState==='visible'){
+  await db.from('mp_profiles').update({presence_updated_at:new Date().toISOString()}).eq('user_id',state.user.id);
+ }
+ if(locationWatch!==null&&(!state.user||!state.profile?.online)){navigator.geolocation.clearWatch(locationWatch);locationWatch=null;}
+},60000);
+setInterval(()=>{if(page==='admin'&&state.roles.includes('admin')&&document.visibilityState==='visible'&&!document.querySelector('[role="dialog"]')&&!document.querySelector('input:focus,select:focus,textarea:focus'))void render();},30000);

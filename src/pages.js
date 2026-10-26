@@ -1,4 +1,4 @@
-import {adminDashboard,adminSummary} from './admin-design.js';
+import {adminConsolePage} from './admin-console.js';
 import { paymentActions } from './payments.js';
 import {db,result,state,can,money,dateTime,statusText,cart,cartTotal,favorites} from './data.js';
 import {esc,icon,btn,field,select,textarea,card,badge,empty,demo,safeImage,productCard,serviceCard,orderCard,route} from './ui.js';
@@ -107,7 +107,7 @@ export async function courierPage() {
  const header=`<div class="mp-banner"><strong>${icon('two_wheeler')} Mundo Pet • Entregador parceiro</strong><p>${esc(state.profile?.full_name||'Entregador')} • ${state.profile?.online?'● Online':'● Offline'}</p></div>`;
  const availability=card('Disponibilidade',`<div class="mp-row mp-between"><div><strong>${state.profile?.online?'Você está online':'Você está offline'}</strong><p class="mp-muted">Somente entregadores online recebem ofertas.</p></div><button class="mp-btn" role="switch" aria-checked="${!!state.profile?.online}" data-action="toggle-online">${state.profile?.online?'Ficar offline':'Ficar online'}</button></div>`);
  const summary=`<div class="mp-grid">${kpi('Entregas concluídas',completed.length,'task_alt')}${kpi('Em andamento',active.length,'two_wheeler')}${kpi('Fretes concluídos',money(earned),'account_balance_wallet')}</div>`;
- const deliveryCard=o=>orderCard(o,`${['assigned','delivering'].includes(o.status)?`<p>${icon('location_on')} ${esc(o.address?.street||'Endereço')} ${esc(o.address?.number||'')} • ${esc(o.address?.city||'')}</p>${btn('Abrir rota no Google Maps','map-route','outline',`data-id="${o.id}"`)}`:''}${o.status==='assigned'?btn('Confirmar coleta na loja','order-status','',`data-id="${o.id}" data-status="delivering"`):''}${o.status==='delivering'?`<form class="mp-stack mp-delivery-form" data-id="${o.id}">${field('code','Código do cliente (8 dígitos)','','text','required pattern="[0-9]{8}" inputmode="numeric" maxlength="8"')}<button class="mp-btn" type="submit">Validar PIN e concluir entrega</button></form>`:''}${btn('Detalhes e conversa','order-details','outline small',`data-id="${o.id}"`)}`);
+ const deliveryCard=o=>orderCard(o,`${['assigned','delivering'].includes(o.status)?`<p>${icon('location_on')} ${esc(o.address?.street||'Endereço')} ${esc(o.address?.number||'')} • ${esc(o.address?.city||'')}</p>${btn('Abrir rota no Google Maps','map-route','outline',`data-id="${o.id}"`)}`:''}${o.status==='assigned'?btn('Confirmar coleta na loja','order-status','',`data-id="${o.id}" data-status="delivering"`):''}${o.status==='delivering'?`<form class="mp-stack mp-delivery-form" data-id="${o.id}">${field('code','Código do cliente (6 dígitos)','','text','required pattern="[0-9]{6}" inputmode="numeric" maxlength="6"')}<button class="mp-btn" type="submit">Validar PIN e concluir entrega</button></form>`:''}${btn('Detalhes e conversa','order-details','outline small',`data-id="${o.id}"`)}`);
  const assigned=`<section><h2 class="mp-section-title">Entregas em andamento</h2><div class="mp-stack">${active.map(deliveryCard).join('')||empty('Nenhuma entrega em andamento')}</div></section>`;
  const offerList=`<section><h2 class="mp-section-title">Nova entrega disponível</h2><div class="mp-stack">${state.profile?.online?offers.map(o=>card('',`${badge('Nova entrega','blue')}<h3>${esc(o.store_name)}</h3><p><strong>Ponto de coleta:</strong> ${esc(o.pickup_address)}</p><p class="mp-muted">Destino e rota completos após o aceite. ${o.is_demo?'Pedido de demonstração.':'Valor de frete sujeito às condições do pedido.'}</p>${btn('Aceitar entrega','order-status','mp-full',`data-id="${o.id}" data-status="assigned"`)}`)).join('')||empty('Nenhuma oferta disponível'):empty('Você está offline','Ative sua disponibilidade para consultar novas entregas.')}</div></section>`;
  const history=`<section><h2 class="mp-section-title">Extrato e histórico de corridas</h2><p class="mp-muted">Valores de frete registrados em pedidos concluídos. Não representam saldo Pix disponível.</p><div class="mp-stack">${completed.map(o=>card('',`<div class="mp-row mp-between"><strong>Pedido #${esc(String(o.id).slice(0,8))}</strong><strong>${o.is_demo?'Demonstração':money(o.delivery_cents)}</strong></div><p>${dateTime(o.updated_at||o.created_at)} • Entregue</p><p class="mp-muted">${esc(o.address?.city||'Destino não informado')}</p>${btn('Detalhes da entrega','order-details','outline small',`data-id="${o.id}"`)}`)).join('')||empty('Ainda não há entregas concluídas')}</div></section>`;
@@ -115,60 +115,11 @@ export async function courierPage() {
  if(tab==='history')return `${header}${tabs}${summary}${history}`;
  if(tab==='finance')return `${header}${tabs}${wallet}${history}`;
  if(tab==='deliveries')return `${header}${tabs}${assigned}${history}`;
- return `${header}${tabs}${availability}${summary}${assigned}${offerList}${wallet}${card('Segurança da entrega','<p>Confirme a coleta na loja e valide o código de 6 dígitos fornecido pelo cliente para concluir a entrega.</p>')}`;
+ return `${header}${tabs}${availability}${state.profile?.online?btn('Compartilhar / encerrar localização nas entregas','share-courier-location','outline mp-full'):''}${summary}${assigned}${offerList}${wallet}${card('Segurança da entrega','<p>Confirme a coleta na loja e valide o código de 6 dígitos fornecido pelo cliente para concluir a entrega.</p>')}`;
 }
 export async function adminPage() {
  const blocked=gate('admin');if(blocked)return blocked;
- const tab=new URLSearchParams(location.search).get('tab');
- if(tab==='finance'||tab==='payouts'){
-  const [wallets,entries,stores]=await Promise.all([
-   result(db.from('mp_wallets').select('*').order('created_at',{ascending:false})),
-   result(db.from('mp_wallet_entries').select('*').order('created_at',{ascending:false}).limit(1000)),
-   result(db.from('mp_stores').select('id,name,owner_id'))
-  ]);
-  const kinds=[['store','Lojistas / lojas'],['courier','Motoqueiros / entregadores'],['vet','Veterinários']];
-  const walletCard=w=>{
-   const movements=entries.filter(e=>e.wallet_id===w.id);
-   const balance=movements.reduce((sum,e)=>sum+Number(e.amount_cents||0),0);
-   const store=stores.find(t=>t.id===w.store_id);
-   const name=w.wallet_type==='store'?(store?.name||'Loja sem nome'):(w.wallet_type==='courier'?'Entregador':'Veterinário');
-   return `<article class="mp-card"><div class="mp-row mp-between"><strong>${esc(name)}</strong>${badge('Carteira individual')}</div><p class="mp-muted">ID: ${esc(w.id.slice(0,8))} • Responsável: ${esc(w.owner_id.slice(0,8))}</p><h3>${money(balance)}</h3><p class="mp-muted">Saldo contábil registrado • Não é saldo Pix confirmado</p>${movements.slice(0,10).map(e=>`<div class="mp-labelprice"><span>${esc(e.entry_type)} • ${dateTime(e.created_at)}</span><strong>${money(e.amount_cents)}</strong></div>`).join('')||'<p class="mp-muted">Sem lançamentos conciliados.</p>'}</article>`;
-  };
-  return `<div class="mp-banner"><strong>${icon('account_balance_wallet')} Financeiro e repasses</strong><p>Carteiras separadas por parceiro. Nenhum pagamento Pix é executado nesta tela.</p></div><div class="mp-grid">${kinds.map(([kind,title])=>kpi(title,wallets.filter(w=>w.wallet_type===kind).length,'account_balance_wallet')).join('')}</div>${kinds.map(([kind,title])=>`<section><h2 class="mp-section-title">Repasses de ${title}</h2><div class="mp-stack">${wallets.filter(w=>w.wallet_type===kind).map(walletCard).join('')||empty('Nenhuma carteira cadastrada')}</div></section>`).join('')}<p class="mp-muted">Saques e repasses D+1 serão habilitados somente após conciliação, regras de comissão e integração com o provedor financeiro.</p>`;
- }
- if(tab==='services'){
-  const services=await result(db.from('mp_services').select('*').order('name'));
-  return `<section><h2 class="mp-section-title">Serviços aguardando aprovação</h2><div class="mp-stack">${services.filter(x=>!x.active).map(x=>card('',`<h3>${esc(x.name)}</h3><p>${esc(x.provider_name)} • ${esc(x.category)} • ${money(x.price_cents)}</p>${btn('Aprovar serviço','review-service','',`data-id="${x.id}" data-approved="true"`)}`)).join('')||empty('Nenhum serviço pendente')}</div></section><section><h2 class="mp-section-title">Serviços publicados</h2><div class="mp-stack">${services.filter(x=>x.active).map(x=>card('',`<h3>${esc(x.name)}</h3><p>${esc(x.provider_name)} • ${esc(x.category)}</p>${btn('Retirar da vitrine','review-service','outline',`data-id="${x.id}" data-approved="false"`)}`)).join('')||empty('Nenhum serviço ativo')}</div></section>`;
- }
- if(tab==='products'){
-  const [stores,products]=await Promise.all([
-   result(db.from('mp_stores').select('*').order('name')),
-   result(db.from('mp_products').select('*').order('created_at',{ascending:false}))
-  ]);
-  return `<div class="mp-banner"><strong>${icon('inventory_2')} Gestão de produtos</strong><p class="mp-muted">Cadastre e atualize os produtos exibidos na plataforma.</p></div>
-  <div class="mp-stack" style="margin:16px 0">
-   ${btn('Cadastrar nova loja','admin-new-store','mp-full')}
-   ${stores.length?btn('Cadastrar produto','admin-new-product','mp-full'):''}
-  </div>
-  <section><h2 class="mp-section-title">Produtos aguardando aprovação</h2><div class="mp-stack">${products.filter(p=>p.approval_status==='pending').map(p=>card('',`<strong>${esc(p.name)}</strong><p>${esc(stores.find(t=>t.id===p.store_id)?.name||'Loja')} • ${money(p.price_cents)}</p><div class="mp-grid">${btn('Recusar','review-product','danger',`data-id="${p.id}" data-status="rejected"`)}${btn('Aprovar anúncio','review-product','',`data-id="${p.id}" data-status="approved"`)}</div>`)).join('')||empty('Nenhum produto pendente')}</div></section>
-  <section><h2 class="mp-section-title">Produtos cadastrados (${products.length})</h2>
-  <div class="mp-stack">${products.map(p=>`<article class="mp-card"><div class="mp-row mp-between"><div><strong>${esc(p.name)}</strong><p class="mp-muted">${esc(stores.find(t=>t.id===p.store_id)?.name||'Loja')} · ${esc(p.category)}</p></div>${badge(p.active?'Ativo':'Oculto')}</div><div class="mp-row mp-between"><strong>${money(p.price_cents)}</strong><span>Estoque: ${p.stock}</span></div><div class="mp-grid" style="margin-top:12px">${btn('Editar','product-editor','outline',`data-id="${p.id}" data-store="${p.store_id}"`)}${btn(p.active?'Ocultar':'Ativar','toggle-product','outline',`data-id="${p.id}" data-active="${!p.active}"`)}</div></article>`).join('')||empty('Nenhum produto cadastrado')}</div></section>`;
- }
- if(tab==='settings')return `<section id="ad-settings"><div class="ad-section-heading"><h2>${icon('tune')}Configurações</h2></div><div class="ad-management-links"><a href="${route.admin}?tab=products">${icon('inventory_2')}Produtos e lojas ${icon('chevron_right')}</a><a href="${route.admin}?tab=services">${icon('medical_services')}Serviços e profissionais ${icon('chevron_right')}</a><a href="${route.admin}?tab=finance">${icon('account_balance_wallet')}Carteiras individuais ${icon('chevron_right')}</a><a href="${route.tutor}">${icon('person')}Minha conta ${icon('chevron_right')}</a><a href="${route.home}">${icon('storefront')}Abrir loja ${icon('chevron_right')}</a></div></section>${card('Integrações',`<p class="mp-muted">Taxas, repasses automáticos, campanhas e saques dependem das integrações financeiras e dos registros habilitados na plataforma.</p>${btn('Consultar regras de comissão','admin-commission-info','outline mp-full')}`)}`;
- const [applications,orders,appointments,entries,policy]=await Promise.all([
-  result(db.from('mp_applications').select('*').order('created_at',{ascending:false})),
-  result(db.from('mp_orders').select('*,mp_order_items(*)').order('created_at',{ascending:false}).limit(100)),
-  result(db.from('mp_appointments').select('*,mp_services(name,provider_name),mp_pets(name)').order('starts_at',{ascending:false}).limit(100)),
-  result(db.from('mp_wallet_entries').select('amount_cents').limit(1000)),
-  result(db.from('mp_commission_policy').select('products_bps,services_bps').maybeSingle()),
- ]);
- const summary=adminSummary({applications,orders,appointments,stores:state.stores,services:state.services,policy});
- state.adminPending=summary.pending.length;
- const dashboard=adminDashboard({summary,applications,orders,stores:state.stores,policy,walletBalance:entries.reduce((sum,x)=>sum+Number(x.amount_cents||0),0),showAllOrders:tab==='orders'});
- if(tab==='applications')return dashboard.slice(dashboard.indexOf('<section id="ad-applications"'),dashboard.indexOf('<section id="ad-orders"'));
- if(tab==='orders')return dashboard.slice(dashboard.indexOf('<section id="ad-orders"'),dashboard.indexOf('<section id="ad-fleet"'));
- return dashboard+`<section><div class="ad-section-heading"><h2>${icon('calendar_month')}Agendamentos</h2></div><div class="mp-stack">${appointmentsList(appointments,true)}</div></section>`;
-
+ return adminConsolePage();
 }
 
 export function specialtyPage(kind) {

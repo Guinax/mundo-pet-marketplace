@@ -4,18 +4,19 @@ import config from './config.json' with { type: 'json' };
 export const db = createClient(config.url, config.key, {
   auth: { storageKey: 'mundopet.auth.fresh.v2', detectSessionInUrl: true, persistSession: true },
 });
-export const state = { user: null, profile: null, roles: [], pets: [], products: [], services: [], stores: [], orders: [], appointments: [] };
+export const state = { user: null, profile: null, roles: [], pets: [], products: [], services: [], stores: [], orders: [], appointments: [], campaigns: [] };
 export async function result(query) { const { data, error } = await query; if (error) throw error; return data; }
 export async function loadPublic() {
-  [state.products, state.services, state.stores] = await Promise.all([
+  [state.products, state.services, state.stores, state.campaigns] = await Promise.all([
     result(db.from('mp_products').select('*').eq('active', true).order('created_at')),
     result(db.from('mp_services').select('*').eq('active', true).order('name')),
     result(db.from('mp_stores').select('*').order('name')),
+    result(db.from('mp_campaigns').select('*').eq('active',true).order('position').order('created_at')),
   ]);
   state.publicLoaded = true;
 }
 export async function loadUser() {
-  if (!state.user) { state.profile=null; state.roles=[]; state.pets=[]; state.orders=[]; state.appointments=[]; return; }
+  if (!state.user) { state.profile=null; state.roles=[]; state.adminPending=0; state.pets=[]; state.orders=[]; state.appointments=[]; return; }
   const uid=state.user.id;
   const [profile,roles,pets,orders,appointments] = await Promise.all([
     result(db.from('mp_profiles').select('*').eq('user_id',uid).maybeSingle()),
@@ -24,7 +25,7 @@ export async function loadUser() {
     result(db.from('mp_orders').select('*,mp_order_items(*)').eq('buyer_id',uid).order('created_at',{ascending:false}).limit(100)),
     result(db.from('mp_appointments').select('*,mp_services(name,provider_name),mp_pets(name)').eq('tutor_id',uid).order('starts_at',{ascending:false}).limit(100)),
   ]);
-  state.profile=profile;state.roles=roles.map(r=>r.role);state.pets=pets;state.orders=orders;state.appointments=appointments;
+  state.profile=profile;state.roles=roles.map(r=>r.role);if(!state.roles.includes('admin'))state.adminPending=0;state.pets=pets;state.orders=orders;state.appointments=appointments;
   await Promise.all(state.pets.filter(p=>p.photo_path).map(async p=>{const {data,error}=await db.storage.from('mp-pets').createSignedUrl(p.photo_path,1800);if(!error)p.photo_url=data.signedUrl;}));
 }
 export const can = role => state.roles.includes(role) || state.roles.includes('admin');
