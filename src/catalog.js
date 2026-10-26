@@ -3,6 +3,8 @@ export const sectorImages = {
   grooming: '/media/sectors/banho-e-tosa.webp',
   pharmacy: '/media/sectors/pet-shop-farmacia.webp',
   shop: '/media/sectors/pet-shop-farmacia.webp',
+  hotel: '/media/sectors/hospedagem-creche.jpg',
+  walkers: '/media/sectors/passeios-dog-walkers.jpg',
 };
 export const normalizeSearch = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
 export function selectProducts(products, { category = '', search = '', brand = '', inStock = false, sort = 'relevance', maxPrice = 0, favorites = null } = {}) {
