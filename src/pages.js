@@ -1,3 +1,4 @@
+import {adminDashboard,adminSummary} from './admin-design.js';
 import { paymentActions } from './payments.js';
 import {db,result,state,can,money,dateTime,statusText,cart,cartTotal,favorites} from './data.js';
 import {esc,icon,btn,field,select,textarea,card,badge,empty,demo,safeImage,productCard,serviceCard,orderCard,route} from './ui.js';
@@ -153,13 +154,21 @@ export async function adminPage() {
   <section><h2 class="mp-section-title">Produtos cadastrados (${products.length})</h2>
   <div class="mp-stack">${products.map(p=>`<article class="mp-card"><div class="mp-row mp-between"><div><strong>${esc(p.name)}</strong><p class="mp-muted">${esc(stores.find(t=>t.id===p.store_id)?.name||'Loja')} · ${esc(p.category)}</p></div>${badge(p.active?'Ativo':'Oculto')}</div><div class="mp-row mp-between"><strong>${money(p.price_cents)}</strong><span>Estoque: ${p.stock}</span></div><div class="mp-grid" style="margin-top:12px">${btn('Editar','product-editor','outline',`data-id="${p.id}" data-store="${p.store_id}"`)}${btn(p.active?'Ocultar':'Ativar','toggle-product','outline',`data-id="${p.id}" data-active="${!p.active}"`)}</div></article>`).join('')||empty('Nenhum produto cadastrado')}</div></section>`;
  }
- const [applications,orders,appointments]=await Promise.all([result(db.from('mp_applications').select('*').order('created_at',{ascending:false})),result(db.from('mp_orders').select('*,mp_order_items(*)').order('created_at',{ascending:false}).limit(100)),result(db.from('mp_appointments').select('*,mp_services(name,provider_name),mp_pets(name)').order('starts_at',{ascending:false}).limit(100))]);
- if(tab==='finance')return finance(orders);
- const pending=applications.filter(a=>a.status==='pending');
- const summary=`<div class="mp-banner"><strong>${icon('verified_user')} Administração Mundo Pet</strong><p class="mp-muted">${esc(state.user.email)} • Dados atualizados do banco</p></div><div class="mp-grid">${kpi('Vendas reais concluídas',money(orders.filter(o=>!o.is_demo&&o.status==='delivered').reduce((s,o)=>s+o.total_cents,0)),'payments')}${kpi('Credenciamentos',pending.length,'verified_user')}${kpi('Pedidos',orders.length,'receipt_long')}${kpi('Agendamentos',appointments.length,'calendar_month')}</div>`;
- const appList=card('Fila de credenciamento',applications.map(a=>`<article class="mp-card"><div class="mp-row mp-between"><h3>${esc(a.name)}</h3>${badge(statusText(a.status),a.status==='pending'?'warning':'')}</div><p>${({pet_shop:'Pet Shop',dog_walker:'Dog Walker',hotel:'Hotel e hospedagem',daycare:'Creche Pet',grooming:'Banho e tosa',pharmacy:'Farmácia Pet',veterinary:'Veterinário',trainer:'Adestrador',pet_sitter:'Cuidador / Pet Sitter',pet_taxi:'Transporte Pet',courier:'Entregador'})[a.service_type]||({store:'Pet Shop',vet:'Veterinário',courier:'Entregador'})[a.role]} • ${esc(a.registration||'Documento não informado')}</p><p class="mp-muted">${esc(a.address)} ${esc(a.phone)}</p>${a.status==='pending'?`<div class="mp-grid" style="margin-top:12px">${btn('Recusar','review-application','danger',`data-id="${a.id}" data-approved="false"`)}${btn('Aprovar cadastro','review-application','',`data-id="${a.id}" data-approved="true"`)}</div>`:''}</article>`).join('')||empty('Nenhum credenciamento pendente'));
- const orderList=`<section><h2 class="mp-section-title">Monitoramento dos pedidos</h2><div class="mp-stack">${orders.map(storeOrder).join('')||empty('Nenhum pedido cadastrado')}</div></section>`;
- return tab==='applications'?appList:tab==='orders'?orderList:`${summary}${appList}${orderList}<section><h2 class="mp-section-title">Agendamentos</h2><div class="mp-stack">${appointmentsList(appointments,true)}</div></section>${finance(orders)}`;
+ if(tab==='settings')return `<section id="ad-settings"><div class="ad-section-heading"><h2>${icon('tune')}Configurações</h2></div><div class="ad-management-links"><a href="${route.admin}?tab=products">${icon('inventory_2')}Produtos e lojas ${icon('chevron_right')}</a><a href="${route.admin}?tab=services">${icon('medical_services')}Serviços e profissionais ${icon('chevron_right')}</a><a href="${route.admin}?tab=finance">${icon('account_balance_wallet')}Carteiras individuais ${icon('chevron_right')}</a><a href="${route.tutor}">${icon('person')}Minha conta ${icon('chevron_right')}</a><a href="${route.home}">${icon('storefront')}Abrir loja ${icon('chevron_right')}</a></div></section>${card('Integrações',`<p class="mp-muted">Taxas, repasses automáticos, campanhas e saques dependem das integrações financeiras e dos registros habilitados na plataforma.</p>${btn('Consultar regras de comissão','admin-commission-info','outline mp-full')}`)}`;
+ const [applications,orders,appointments,entries,policy]=await Promise.all([
+  result(db.from('mp_applications').select('*').order('created_at',{ascending:false})),
+  result(db.from('mp_orders').select('*,mp_order_items(*)').order('created_at',{ascending:false}).limit(100)),
+  result(db.from('mp_appointments').select('*,mp_services(name,provider_name),mp_pets(name)').order('starts_at',{ascending:false}).limit(100)),
+  result(db.from('mp_wallet_entries').select('amount_cents').limit(1000)),
+  result(db.from('mp_commission_policy').select('products_bps,services_bps').maybeSingle()),
+ ]);
+ const summary=adminSummary({applications,orders,appointments,stores:state.stores,services:state.services,policy});
+ state.adminPending=summary.pending.length;
+ const dashboard=adminDashboard({summary,applications,orders,stores:state.stores,policy,walletBalance:entries.reduce((sum,x)=>sum+Number(x.amount_cents||0),0),showAllOrders:tab==='orders'});
+ if(tab==='applications')return dashboard.slice(dashboard.indexOf('<section id="ad-applications"'),dashboard.indexOf('<section id="ad-orders"'));
+ if(tab==='orders')return dashboard.slice(dashboard.indexOf('<section id="ad-orders"'),dashboard.indexOf('<section id="ad-fleet"'));
+ return dashboard+`<section><div class="ad-section-heading"><h2>${icon('calendar_month')}Agendamentos</h2></div><div class="mp-stack">${appointmentsList(appointments,true)}</div></section>`;
+
 }
 
 export function specialtyPage(kind) {

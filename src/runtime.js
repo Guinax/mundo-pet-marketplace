@@ -1,11 +1,14 @@
+import {bindAdminFilters} from './admin-design.js';
 import { approvedPaymentUrl, paymentActions, cartAfterPayment, paymentIssueMessage } from './payments.js';
 import { db,result,state,loadPublic,loadUser,can,money,dateTime,statusText,cart,saveCart,orderRequestKey,toggleFavorite,validCPF,formObject } from './data.js';
 import { esc,icon,btn,route,field,select,textarea,card,badge,empty,shell,modal,closeModal,toast } from './ui.js';
-import { home,updateCatalog,tutor,booking,checkout,storePage,vetPage,courierPage,adminPage,petEditor,specialtyPage } from './pages.js';
+import { tutor,booking,checkout,storePage,vetPage,courierPage,adminPage,petEditor } from './pages.js';
+import { shopHome as home, refreshCatalog as updateCatalog, catalogPage, productPage, sectorPage } from './storefront.js';
+import { productImages, productUrl } from './catalog.js';
 
 const path=location.pathname;
-const page=path.includes('hotel_hospedagem')?'hotel':path.includes('dog_walkers_passeios')?'walkers':path.includes('mundo_pet_farmacia')?'pharmacy':path.includes('cadastro_de_tutor')?'tutor':path.includes('agendamento_de_servi')?'booking':path.includes('carrinho_checkout')?'cart':path.includes('administrativo')?'admin':path.includes('entregador_corridas')?'courier':path.includes('pet_shop_lojista')?'store':path.includes('veterin_rio_agenda')?'vet':'home';
-let filter='';let search='';let rendering=0;let activeOrder=null;let openingAccount=false;
+const page=path.includes('mundo_pet_produto')?'product':path.includes('mundo_pet_catalogo')?'catalog':path.includes('mundo_pet_banho_tosa')?'grooming':path.includes('mundo_pet_veterinarios')?'veterinary':path.includes('hotel_hospedagem')?'hotel':path.includes('dog_walkers_passeios')?'walkers':path.includes('mundo_pet_farmacia')?'pharmacy':path.includes('cadastro_de_tutor')?'tutor':path.includes('agendamento_de_servi')?'booking':path.includes('carrinho_checkout')?'cart':path.includes('administrativo')?'admin':path.includes('entregador_corridas')?'courier':path.includes('pet_shop_lojista')?'store':path.includes('veterin_rio_agenda')?'vet':'home';
+let filter=new URLSearchParams(location.search).get('category')||'';let search=new URLSearchParams(location.search).get('q')||'';let catalogOptions={sort:'relevance',brand:'',inStock:false,maxPrice:0};let detailQuantity=1;let rendering=0;let activeOrder=null;let openingAccount=false;
 let deliveryQuote=null;let deliveryQuoteKey='';let deliverySeq=0;
 function deliveryFingerprint(){const items=cart();const a=state.profile?.address||{};return JSON.stringify({uid:state.user?.id||'',items,address:a});}
 async function updateDeliveryQuote(){
@@ -36,14 +39,15 @@ async function updateDeliveryQuote(){
  }catch(err){if(seq!==deliverySeq)return;status.textContent=err?.message||'Frete indisponível. Confira o endereço completo de entrega e da loja.';if(value)value.textContent='Indisponível';if(grand)grand.textContent='Não disponível';if(paymentState)paymentState.textContent='Pagamento temporariamente bloqueado: não foi possível confirmar o frete. Nenhuma cobrança foi criada.';const retry=document.getElementById('mp-retry-shipping');if(retry)retry.hidden=false;}
 }
 
-const renderers={home,tutor,booking,cart:checkout,store:storePage,vet:vetPage,courier:courierPage,admin:adminPage,hotel:()=>specialtyPage('hotel'),walkers:()=>specialtyPage('walkers'),pharmacy:()=>specialtyPage('pharmacy')};
+const renderers={home,catalog:catalogPage,product:()=>productPage(detailQuantity),veterinary:()=>sectorPage('veterinary'),grooming:()=>sectorPage('grooming'),tutor,booking,cart:checkout,store:storePage,vet:vetPage,courier:courierPage,admin:adminPage,hotel:()=>sectorPage('hotel'),walkers:()=>sectorPage('walkers'),pharmacy:()=>sectorPage('pharmacy')};
 async function render() {
  const token=++rendering;
  try {
   const body=await renderers[page]();if(token!==rendering)return;
   shell(page,body,state.user?state.profile?.full_name||'Sua conta conectada':'Mundo Pet');
   if(page==='cart')void updateDeliveryQuote();
-  if(page==='home'){updateCatalog(filter,search);const input=document.getElementById('mp-search');input.value=search;if(new URLSearchParams(location.search).has('explore'))document.getElementById('mp-catalog')?.scrollIntoView({block:'start'});}
+  if(page==='product'){const p=state.products.find(p=>p.id===new URLSearchParams(location.search).get('id'));if(p)document.title=p.name+' | Mundo Pet';}
+  if(['home','catalog'].includes(page)){updateCatalog(filter,search,catalogOptions);const input=document.getElementById('mp-search');input.value=search;if(page==='home'&&new URLSearchParams(location.search).has('explore'))document.getElementById('mp-catalog')?.scrollIntoView({block:'start'});}
  }catch(error){shell(page,`<div class="mp-runtime-error"><strong>Não foi possível carregar esta página.</strong><p>${esc(friendly(error))}</p>${btn('Tentar novamente','refresh')}</div>`);}
 }
 function friendly(error) {
@@ -226,7 +230,22 @@ async function scanProductCode(el){
  }catch(error){stopProductScan();throw new Error('Não foi possível acessar a câmera. Confira a permissão do navegador.');}
 }
 document.addEventListener('click',event=>{if(event.target.closest('[data-action="close-modal"]'))stopProductScan();});
+async function addProduct(id,quantity=1){
+ const p=state.products.find(p=>p.id===id);
+ if(!p||p.stock<1||!Number.isInteger(quantity)||quantity<1)throw Error('Produto indisponível.');
+ const items=cart();
+ if(items.some(i=>{const product=state.products.find(x=>x.id===i.product_id);return product&&product.store_id!==p.store_id;}))throw Error('Finalize o carrinho da outra loja antes de adicionar este produto.');
+ const old=items.find(i=>i.product_id===id),total=(old?.quantity||0)+quantity;
+ if(total>Math.min(p.stock,99))throw Error('Quantidade maior que o estoque disponível.');
+ if(old)old.quantity=total;else items.push({product_id:id,quantity});
+ saveCart(items);
+}
+function redrawCatalog(){updateCatalog(filter,search,catalogOptions);}
+bindAdminFilters();
 const actions={
+ 'admin-notifications':()=>{location.href=route.admin+'?tab=applications';},
+ 'admin-commission-info':async()=>{if(!state.roles.includes('admin'))throw Error('Acesso restrito.');const policy=await result(db.from('mp_commission_policy').select('products_bps,services_bps').maybeSingle());modal('Regras de comissão',`<p>Produtos: ${policy?policy.products_bps/100+'%':'Não configurado'}</p><p>Serviços: ${policy?policy.services_bps/100+'%':'Não configurado'}</p><p class="mp-muted">Alterações globais de taxas e repasses automáticos ainda não estão habilitadas neste painel.</p>`);},
+ 'admin-marketing-info':()=>modal('Marketing & campanhas','<p>A gestão de banners patrocinados e cupons globais ainda não está habilitada.</p><p class="mp-muted">O cupom MUNDOPET10 existente é exclusivo para pedidos de demonstração.</p>'),
  'scan-product-code':scanProductCode,
  'lookup-product-code':el=>lookupProductBarcode(document.getElementById('mp-product-form')?.elements.namedItem('ean')?.value),
  'stop-product-scan':stopProductScan,
@@ -235,11 +254,21 @@ const actions={
  refresh:async()=>{await refresh();toast('Dados atualizados.');},
  apply:el=>applicationModal(el.dataset.role||'store'),
  'edit-address':()=>{if(requireLogin())location.href=route.tutor;},
- 'add-cart':async el=>{const p=state.products.find(p=>p.id===el.dataset.id);if(!p||p.stock<1)throw new Error('Produto indisponível.');const items=cart();const other=items.map(i=>state.products.find(p=>p.id===i.product_id)).some(x=>x&&x.store_id!==p.store_id);if(other)throw new Error('Finalize o carrinho da outra loja antes de adicionar este produto.');const old=items.find(i=>i.product_id===p.id);if(old){if(old.quantity>=Math.min(p.stock,99))throw new Error('Limite de estoque atingido.');old.quantity++;}else items.push({product_id:p.id,quantity:1});saveCart(items);await render();toast('Produto adicionado ao carrinho.');},
+ 'add-cart':async el=>{await addProduct(el.dataset.id);await render();toast('Produto adicionado à sacola.');},
  'buy-now':async el=>{await actions['add-cart'](el);location.href=route.cart;},
- favorite:async el=>{toggleFavorite(el.dataset.id);updateCatalog(filter,search);toast('Favoritos atualizados.');},
+ favorite:async el=>{toggleFavorite(el.dataset.id);if(['product','pharmacy','grooming'].includes(page))await render();else redrawCatalog();toast('Favoritos atualizados.');},
  filter:el=>{filter=el.dataset.filter;document.querySelectorAll('.mp-category').forEach(n=>n.classList.toggle('active',n.dataset.filter===filter));updateCatalog(filter,search);document.getElementById('mp-catalog')?.scrollIntoView({behavior:'smooth',block:'start'});},
- 'clear-filter':()=>{filter='';search='';if(document.getElementById('mp-search'))document.getElementById('mp-search').value='';document.querySelectorAll('.mp-category').forEach(n=>n.classList.remove('active'));updateCatalog();},
+ 'clear-filter':()=>{filter='';search='';catalogOptions={sort:'relevance',brand:'',inStock:false,maxPrice:0};const input=document.getElementById('mp-search');if(input)input.value='';const url=new URL(location.href);url.searchParams.delete('category');url.searchParams.delete('q');history.replaceState({},'',url.pathname+url.search+url.hash);redrawCatalog();},
+ 'catalog':()=>{location.href=route.catalog;},
+ 'catalog-category':el=>{filter=el.dataset.filter;redrawCatalog();},
+ 'catalog-stock':()=>{catalogOptions.inStock=!catalogOptions.inStock;redrawCatalog();},
+ 'catalog-filters':()=>{const categories=[...new Set(state.products.map(p=>p.category))],brands=[...new Set(state.products.map(p=>p.brand).filter(Boolean))];modal('Filtrar catálogo',`<form id="mp-catalog-filter-form" class="mp-stack">${select('category','Categoria',[['','Todas as categorias'],...categories.map(x=>[x,x])],filter)}${select('brand','Marca',[['','Todas as marcas'],...brands.map(x=>[x,x])],catalogOptions.brand)}${field('max_price','Preço máximo (R$)',catalogOptions.maxPrice?catalogOptions.maxPrice/100:'','number','min="0" step="0.01" placeholder="Sem limite"')}<label class="mp-check"><input name="in_stock" type="checkbox" ${catalogOptions.inStock?'checked':''}> Somente produtos em estoque</label><button class="mp-btn" type="submit">Aplicar filtros</button></form>`);},
+ 'detail-quantity':async el=>{const p=state.products.find(p=>p.id===new URLSearchParams(location.search).get('id'));if(!p)return;detailQuantity=Math.max(1,Math.min(99,p.stock,detailQuantity+Number(el.dataset.change)));await render();},
+ 'add-detail-cart':async el=>{await addProduct(el.dataset.id,detailQuantity);await render();toast('Produto adicionado à sacola.');},
+ 'buy-detail':async el=>{await addProduct(el.dataset.id,detailQuantity);location.href=route.cart;},
+ 'product-image':el=>{const p=state.products.find(p=>p.id===el.dataset.id),images=p?productImages(p):[],index=Number(el.dataset.index);if(!images[index])return;const photo=document.getElementById('mp-detail-image');if(photo)photo.src=images[index];const count=document.getElementById('mp-gallery-count');if(count)count.textContent=(index+1)+' / '+images.length;document.querySelectorAll('.mp-gallery-thumbs button').forEach(b=>b.classList.toggle('selected',b===el));},
+ 'product-zoom':el=>{const p=state.products.find(p=>p.id===el.dataset.id),src=document.getElementById('mp-detail-image')?.src;if(p&&src)modal(p.name,`<img src="${esc(src)}" alt="${esc(p.name)}" class="mp-zoom-image">`);},
+ 'share-product':async()=>{const id=new URLSearchParams(location.search).get('id');if(!id)return;const url=new URL(productUrl(id),location.origin).href;try{await navigator.clipboard.writeText(url);toast('Link do produto copiado.');}catch{modal('Compartilhar produto',`<p>Copie o link abaixo:</p><input class="mp-input" aria-label="Link do produto" readonly value="${esc(url)}">`);}},
  explore:()=>{document.getElementById('mp-catalog')?.scrollIntoView({behavior:'smooth',block:'start'});document.getElementById('mp-search')?.focus();},
  'book-service':el=>{sessionStorage.setItem('mundopet.service',el.dataset.id);location.href=route.booking;},
  'edit-pet':el=>{const p=state.pets.find(p=>p.id===el.dataset.id);modal('Editar pet',petEditor(p));},
@@ -307,6 +336,7 @@ async function uploadImage(form,name) {
  return data.publicUrl;
 }
 const forms={
+ 'mp-catalog-filter-form':async(form,v)=>{filter=v.category;catalogOptions.brand=v.brand;catalogOptions.inStock=form.elements.in_stock.checked;catalogOptions.maxPrice=Math.max(0,Math.round(Number(v.max_price||0)*100));closeModal();redrawCatalog();},
  'mp-recovery-form':async(form,v)=>{const {error}=await db.auth.resetPasswordForEmail(v.email.trim(),{redirectTo:location.origin+route.home+'?recovery=1'});if(error)throw error;modal('Verifique seu e-mail',`<p>Se o endereço estiver cadastrado, você receberá um link para criar uma nova senha.</p>${btn('Voltar para entrar','login','mp-full')}`);},
  'mp-new-password-form':async(form,v)=>{if(v.password!==v.confirm)throw new Error('As senhas não coincidem.');const {error}=await db.auth.updateUser({password:v.password});if(error)throw error;closeModal();await loadUser();await render();toast('Senha alterada com sucesso.');},
  'mp-auth-form':async(form,v)=>{
@@ -372,8 +402,9 @@ const forms={
  'mp-clinical-form':async(form,v)=>{await result(db.from('mp_clinical_notes').insert({appointment_id:form.dataset.id,provider_id:state.user.id,body:v.body.trim()}));await clinicalModal(form.dataset.id);toast('Anotação salva.');},
 };
 document.addEventListener('submit',async event=>{const form=event.target;const handler=form.classList.contains('mp-delivery-form')?(f,v)=>orderStatus(f.dataset.id,'delivered',v.code):forms[form.id];if(!handler)return;event.preventDefault();const button=form.querySelector('[type="submit"]');if(button.disabled)return;button.disabled=true;try{await handler(form,formObject(form));}catch(error){const errorBox=form.querySelector('.mp-error');if(errorBox)errorBox.textContent=friendly(error);else toast(friendly(error),true);}finally{if(button.isConnected)button.disabled=false;}});
-document.addEventListener('input',event=>{if(event.target.id==='mp-search'){search=event.target.value;updateCatalog(filter,search);}});
+document.addEventListener('input',event=>{if(event.target.id==='mp-search'){search=event.target.value;redrawCatalog();}});
 document.addEventListener('change',event=>{
+ if(event.target.id==='mp-catalog-sort'){catalogOptions.sort=event.target.value;redrawCatalog();}
  if(event.target.id==='mp-show-password'){const input=document.querySelector('#mp-auth-form [name="password"]');input.type=event.target.checked?'text':'password';}
  if(event.target.closest('#mp-booking-form')){const form=document.getElementById('mp-booking-form');const v=formObject(form);const price=state.services.find(s=>s.id===v.service)?.price_cents||0;const total=document.getElementById('mp-booking-total');if(total)total.textContent=money(price+({home:3000,taxi:4000}[v.mode]||0));}
 });

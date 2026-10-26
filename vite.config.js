@@ -7,9 +7,10 @@ export default defineConfig({
   configureServer(server){server.middlewares.use((req,res,next)=>{
    const [path,query]=req.url?.split('?')||[];
    if(path==='/assets/runtime.js')req.url='/src/runtime.js';
+   else if(path==='/assets/admin-preview.js')req.url='/src/admin-preview.js';
    else if(path?.startsWith('/mundo_pet_')&&!path.split('/').at(-1)?.includes('.'))req.url=path.replace(/\/$/,'')+'/index.html'+(query?'?'+query:'');
    next();
   });},
  }],
- build:{rollupOptions:{input:{main:resolve('index.html'),runtime:resolve('src/runtime.js')},output:{entryFileNames:'assets/[name].js',chunkFileNames:'assets/[name]-[hash].js'}}},
+ build:{rollupOptions:{input:{main:resolve('index.html'),runtime:resolve('src/runtime.js'),'admin-preview':resolve('src/admin-preview.js')},output:{entryFileNames:'assets/[name].js',chunkFileNames:'assets/[name]-[hash].js'}}},
 });

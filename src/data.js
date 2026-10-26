@@ -12,6 +12,7 @@ export async function loadPublic() {
     result(db.from('mp_services').select('*').eq('active', true).order('name')),
     result(db.from('mp_stores').select('*').order('name')),
   ]);
+  state.publicLoaded = true;
 }
 export async function loadUser() {
   if (!state.user) { state.profile=null; state.roles=[]; state.pets=[]; state.orders=[]; state.appointments=[]; return; }
