@@ -1,0 +1,11 @@
+import {APP_URL,APP_SHARE,brandImage,shareTargets,nativeAppShare,copyAppLink} from './branding.js';
+import {modal,closeModal,toast,esc,icon,btn} from './ui.js';
+export function appShareModal(){
+ const targets=shareTargets(),native=typeof navigator.share==='function'&&globalThis.isSecureContext!==false;
+ modal('Compartilhar Mundo Pet',`<div class="mp-app-share"><div class="mp-share-brand">${brandImage()}</div><p>${esc(APP_SHARE.text)}</p><div class="mp-share-networks"><a href="${esc(targets.whatsapp)}" target="_blank" rel="noopener noreferrer" class="mp-share-network whatsapp">${icon('chat')}<span>WhatsApp</span></a><a href="${esc(targets.facebook)}" target="_blank" rel="noopener noreferrer" class="mp-share-network facebook"><b aria-hidden="true">f</b><span>Facebook</span></a><a href="${esc(targets.x)}" target="_blank" rel="noopener noreferrer" class="mp-share-network x"><b aria-hidden="true">𝕏</b><span>X</span></a></div>${native?btn(icon('share')+' Compartilhar em outros apps','share-app-native','mp-full'):''}<label class="mp-field"><span>Link do aplicativo</span><input class="mp-input" id="mp-app-share-url" aria-label="Link público do Mundo Pet" type="url" value="${APP_URL}" readonly></label>${btn(icon('content_copy')+' Copiar link','copy-app-link','outline mp-full')}<p class="mp-share-feedback" role="status" aria-live="polite">Você também pode copiar o link para compartilhar nas suas redes.</p></div>`);
+}
+export const appShareActions={
+ 'share-app':appShareModal,
+ 'share-app-native':async()=>{const outcome=await nativeAppShare();if(outcome==='shared')closeModal();else if(outcome==='fallback'){const feedback=document.querySelector('.mp-share-feedback');if(feedback)feedback.textContent='Use os botões das redes sociais ou copie o link abaixo.';}},
+ 'copy-app-link':async()=>{if(await copyAppLink()){const feedback=document.querySelector('.mp-share-feedback');if(feedback)feedback.textContent='Link copiado! Cole na rede social ou conversa que preferir.';toast('Link do app copiado.');}else{const input=document.getElementById('mp-app-share-url');input?.focus();input?.select();const feedback=document.querySelector('.mp-share-feedback');if(feedback)feedback.textContent='Selecione e copie o link acima para compartilhar.';}},
+};

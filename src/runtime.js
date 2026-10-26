@@ -1,3 +1,4 @@
+import {appShareActions} from './share-app.js';
 import {createAdminHandlers,adminOrderControls} from './admin-console.js';
 import {bindAdminFilters} from './admin-design.js';
 import { approvedPaymentUrl, paymentActions, cartAfterPayment, paymentIssueMessage } from './payments.js';
@@ -302,7 +303,7 @@ const actions={
  'check-payment':async el=>{if(requireLogin())await verifyPayment(el.dataset.id);},
  'order-status':el=>orderStatus(el.dataset.id,el.dataset.status),
  'order-details':el=>orderDetails(el.dataset.id),
- 'print-order':()=>{if(!activeOrder)return;const o=activeOrder;const w=window.open('','_blank');if(!w)throw new Error('Permita abrir a janela de impressão no navegador.');w.document.write(`<!doctype html><html lang="pt-BR"><head><title>Pedido Mundo Pet</title><style>body{font:16px system-ui;padding:28px;max-width:700px}h1{color:#006c49}li{margin:10px 0}</style></head><body><h1>Mundo Pet</h1><h2>Pedido #${o.id.slice(0,8)}</h2><p>${o.is_demo?'DEMONSTRAÇÃO — SEM COBRANÇA':'Comprovante do pedido'}</p><p>${dateTime(o.created_at)}</p><ul>${o.mp_order_items.map(i=>`<li>${i.quantity}× ${esc(i.name)} • ${money(i.unit_cents*i.quantity)}</li>`).join('')}</ul>${o.discount_cents?`<p>Desconto do cupom: − ${money(o.discount_cents)}</p>`:''}<strong>Total: ${money(o.total_cents)}</strong><p>Pagamento: ${o.payment_status==='paid'?'confirmado':'não recebido'}</p><p>Entrega: ${esc(o.address.street)}, ${esc(o.address.number)} • ${esc(o.address.city)}</p><button onclick="window.print()">Imprimir</button></body></html>`);w.document.close();},
+ 'print-order':()=>{if(!activeOrder)return;const o=activeOrder;const w=window.open('','_blank');if(!w)throw new Error('Permita abrir a janela de impressão no navegador.');w.document.write(`<!doctype html><html lang="pt-BR"><head><title>Pedido Mundo Pet</title><style>body{font:16px system-ui;padding:28px;max-width:700px}h1{color:#006c49}li{margin:10px 0}</style></head><body><img src="${location.origin}/media/brand/mundo-pet-logo.png" alt="Mundo Pet" style="width:230px;height:auto"><h2>Pedido #${o.id.slice(0,8)}</h2><p>${o.is_demo?'DEMONSTRAÇÃO — SEM COBRANÇA':'Comprovante do pedido'}</p><p>${dateTime(o.created_at)}</p><ul>${o.mp_order_items.map(i=>`<li>${i.quantity}× ${esc(i.name)} • ${money(i.unit_cents*i.quantity)}</li>`).join('')}</ul>${o.discount_cents?`<p>Desconto do cupom: − ${money(o.discount_cents)}</p>`:''}<strong>Total: ${money(o.total_cents)}</strong><p>Pagamento: ${o.payment_status==='paid'?'confirmado':'não recebido'}</p><p>Entrega: ${esc(o.address.street)}, ${esc(o.address.number)} • ${esc(o.address.city)}</p><button onclick="window.print()">Imprimir</button></body></html>`);w.document.close();},
  'toggle-store':async el=>{const s=state.stores.find(s=>s.id===el.dataset.id);await result(db.from('mp_stores').update({is_open:!s.is_open}).eq('id',s.id));await refresh();toast('Disponibilidade da loja atualizada.');},
  'store-filter':el=>{document.querySelectorAll('[data-order-status]').forEach(n=>n.hidden=el.dataset.filter!=='all'&&n.dataset.orderStatus!==el.dataset.filter);},
  'review-product':async el=>{if(!state.roles.includes('admin'))throw new Error('Acesso restrito.');await result(db.from('mp_products').update({approval_status:el.dataset.status,active:el.dataset.status==='approved'}).eq('id',el.dataset.id));await refresh();toast('Solicitação de produto analisada.');},
@@ -324,6 +325,7 @@ const actions={
  'review-service':async el=>{if(!can('admin'))throw new Error('Acesso restrito.');await result(db.rpc('mp_review_service',{p_service:el.dataset.id,p_approve:el.dataset.approved==='true'}));closeModal();await refresh();toast('Serviço analisado.');},
  'review-application':async el=>{await result(db.rpc('mp_review_application',{aid:el.dataset.id,approved:el.dataset.approved==='true'}));await refresh();toast('Solicitação analisada.');},
  ...adminHandlers.actions,
+ ...appShareActions,
 };
 document.addEventListener('click',async event=>{const el=event.target.closest('[data-action]');if(!el)return;const action=actions[el.dataset.action];if(!action)return;event.preventDefault();if(el.disabled)return;el.disabled=true;try{await action(el);}catch(error){toast(friendly(error),true);}finally{if(el.isConnected)el.disabled=false;}});
 
