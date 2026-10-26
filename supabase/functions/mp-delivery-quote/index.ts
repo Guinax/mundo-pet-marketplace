@@ -2,7 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.0";
 // Accept the documented name and the space-separated name used during setup.
 const mapsCredential = ["GOOGLE_MAPS_API_KEY", "GOOGLE MAPS API KEY"]
  .map(name => Deno.env.get(name)?.trim()).find(Boolean) || "";
-console.info("mp-delivery-quote maps secret configured", Boolean(mapsCredential));
+console.info("mp-delivery-quote maps secret configured", Boolean(mapsCredential), { characters: mapsCredential.length, resembles_sha256: /^[a-f0-9]{64}$/i.test(mapsCredential) });
 const defaultKey=(kind:string)=>{try{const key=JSON.parse(Deno.env.get(kind)||"{}")?.default;return typeof key==="string"?key:"";}catch{return "";}};
 const h={"content-type":"application/json","access-control-allow-origin":"*","access-control-allow-headers":"authorization,apikey,content-type,x-client-info","access-control-allow-methods":"POST,OPTIONS"};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:h});
@@ -37,7 +37,13 @@ Deno.serve(async(req)=>{
    headers:{"Content-Type":"application/json","X-Goog-Api-Key":maps,"X-Goog-FieldMask":"routes.distanceMeters,routes.duration"},
    body:JSON.stringify({origin:{address:store.address},destination:{address:destination},travelMode:"DRIVE",routingPreference:"TRAFFIC_UNAWARE",languageCode:"pt-BR"})
   });
-  if(!resp.ok)return reply({available:false,error:"route_provider_failed",provider_status:resp.status},502);
+  if(!resp.ok){
+   const failure=await resp.json().catch(()=>null);
+   const safeCode=(v:unknown)=>typeof v==="string"&&/^[A-Z_]{1,80}$/.test(v)?v:"UNKNOWN";
+   const reasons=Array.isArray(failure?.error?.details)?failure.error.details.map((d:any)=>safeCode(d?.reason)).filter((v:string)=>v!=="UNKNOWN").slice(0,5):[];
+   console.error("mp-delivery-quote Google Routes rejected request",{provider_status:resp.status,provider_code:safeCode(failure?.error?.status),reasons});
+   return reply({available:false,error:"route_provider_failed",provider_status:resp.status},502);
+  }
   const raw=await resp.json();
   const meters=Number(raw?.routes?.[0]?.distanceMeters);
   if(!Number.isSafeInteger(meters)||meters<0)return reply({available:false,error:"route_unavailable"},422);

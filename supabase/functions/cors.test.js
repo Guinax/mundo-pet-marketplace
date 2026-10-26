@@ -28,6 +28,45 @@ for (const slug of ['mp-delivery-quote', 'mp-secure-checkout', 'mp-infinitepay']
 }
 
 for (const slug of ['mp-delivery-quote', 'mp-secure-checkout']) {
+  test(`${slug}: records Google rejection without copying provider messages or credentials`, async () => {
+    const source = readFileSync(new URL(`./${slug}/index.ts`, import.meta.url), 'utf8').replace(/^import .*?;\n/, '');
+    const product = '11111111-1111-4111-8111-111111111111';
+    const store = '22222222-2222-4222-8222-222222222222';
+    const values = { GOOGLE_MAPS_API_KEY: 'fixture-private-key', SUPABASE_URL: 'https://example.test',
+      SUPABASE_ANON_KEY: 'public-fixture', SUPABASE_SERVICE_ROLE_KEY: 'server-fixture' };
+    let handler;
+    const messages = [];
+    const record = (...args) => messages.push(JSON.stringify(args));
+    const database = {
+      auth: { getUser: async () => ({ data: { user: { id: 'fixture-user' } } }) },
+      from: table => {
+        const chain = { select: () => chain, eq: () => chain,
+          in: async () => ({ data: [{ id: product, store_id: store }] }),
+          maybeSingle: async () => ({ data: table === 'mp_stores'
+            ? { id: store, address: 'Public fixture origin', is_open: true, is_demo: false }
+            : { address: { street: 'Fixture', number: '1', city: 'Fixture', state: 'SP' } } }) };
+        return chain;
+      },
+    };
+    vm.runInNewContext(stripTypeScriptTypes(source), {
+      Deno: { env: { get: name => values[name] }, serve: fn => { handler = fn; } },
+      createClient: () => database, Response, AbortSignal,
+      console: { info: record, error: record },
+      fetch: async () => new Response(JSON.stringify({ error: {
+        status: 'PERMISSION_DENIED', message: 'Never log fixture-private-key',
+        details: [{ reason: 'API_KEY_SERVICE_BLOCKED' }],
+      } }), { status: 403, headers: { 'Content-Type': 'application/json' } }),
+    });
+    const response = await handler(new Request('https://example.test', {
+      method: 'POST', headers: { Authorization: 'Bearer fixture', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ store_id: store, cart: [{ product_id: product, quantity: 1 }],
+        request_id: '33333333-3333-4333-8333-333333333333', payment_method: 'infinitepay_pix' }),
+    }));
+    assert.equal(response.status, 502);
+    assert.equal((await response.json()).provider_status, 403);
+    assert.ok(messages.join('').includes('API_KEY_SERVICE_BLOCKED'));
+    assert.ok(!messages.join('').includes('fixture-private-key'));
+  });
   for (const [label, credential] of [
     ['standard secret name', { GOOGLE_MAPS_API_KEY: '  fixture-google-key  ' }],
     ['space-separated secret name', { 'GOOGLE MAPS API KEY': 'fixture-google-key' }],

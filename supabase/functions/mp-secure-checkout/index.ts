@@ -2,7 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.0";
 // Accept the documented name and the space-separated name used during setup.
 const mapsCredential = ["GOOGLE_MAPS_API_KEY", "GOOGLE MAPS API KEY"]
  .map(name => Deno.env.get(name)?.trim()).find(Boolean) || "";
-console.info("mp-secure-checkout maps secret configured", Boolean(mapsCredential));
+console.info("mp-secure-checkout maps secret configured", Boolean(mapsCredential), { characters: mapsCredential.length, resembles_sha256: /^[a-f0-9]{64}$/i.test(mapsCredential) });
 const defaultKey=(kind:string)=>{try{const key=JSON.parse(Deno.env.get(kind)||"{}")?.default;return typeof key==="string"?key:"";}catch{return "";}};
 const h={"content-type":"application/json","access-control-allow-origin":"*","access-control-allow-headers":"authorization,apikey,content-type,x-client-info","access-control-allow-methods":"POST,OPTIONS"};
 const send=(v,s=200)=>new Response(JSON.stringify(v),{status:s,headers:h});
@@ -42,7 +42,13 @@ Deno.serve(async req=>{
   body:JSON.stringify({origin:{address:store.address},destination:{address:destination},travelMode:"DRIVE",routingPreference:"TRAFFIC_UNAWARE",languageCode:"pt-BR"}),
   signal:AbortSignal.timeout(12000)
  });
- if(!result.ok)return send({error:"shipping_provider_failed",provider_status:result.status},502);
+ if(!result.ok){
+  const failure=await result.json().catch(()=>null);
+  const safeCode=(v:unknown)=>typeof v==="string"&&/^[A-Z_]{1,80}$/.test(v)?v:"UNKNOWN";
+  const reasons=Array.isArray(failure?.error?.details)?failure.error.details.map((d:any)=>safeCode(d?.reason)).filter((v:string)=>v!=="UNKNOWN").slice(0,5):[];
+  console.error("mp-secure-checkout Google Routes rejected request",{provider_status:result.status,provider_code:safeCode(failure?.error?.status),reasons});
+  return send({error:"shipping_provider_failed",provider_status:result.status},502);
+ }
  const route=await result.json(),meters=route?.routes?.[0]?.distanceMeters;
  if(!Number.isSafeInteger(meters)||meters<0)return send({error:"route_not_found"},422);
  const shipping=meters<=1500?500:meters<=3000?750:750+Math.ceil((meters-3000)*150/1000);
