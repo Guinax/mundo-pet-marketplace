@@ -1,7 +1,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.0";
 // Accept the documented name and the space-separated name used during setup.
-const mapsCredential = ["GOOGLE_MAPS_API_KEY", "GOOGLE MAPS API KEY"]
- .map(name => Deno.env.get(name)?.trim()).find(Boolean) || "";
+const mapsCandidates = ["GOOGLE_MAPS_API_KEY", "GOOGLE MAPS API KEY"]
+ .map(name => Deno.env.get(name)?.trim()).filter(Boolean);
+const mapsCredential = mapsCandidates.find(value => !/^[a-f0-9]{64}$/i.test(value!)) || mapsCandidates[0] || "";
 console.info("mp-secure-checkout maps secret configured", Boolean(mapsCredential), { characters: mapsCredential.length, resembles_sha256: /^[a-f0-9]{64}$/i.test(mapsCredential) });
 const defaultKey=(kind:string)=>{try{const key=JSON.parse(Deno.env.get(kind)||"{}")?.default;return typeof key==="string"?key:"";}catch{return "";}};
 const h={"content-type":"application/json","access-control-allow-origin":"*","access-control-allow-headers":"authorization,apikey,content-type,x-client-info","access-control-allow-methods":"POST,OPTIONS"};
@@ -13,6 +14,7 @@ Deno.serve(async req=>{
  const url=Deno.env.get("SUPABASE_URL"),anon=(Deno.env.get("SUPABASE_ANON_KEY")||defaultKey("SUPABASE_PUBLISHABLE_KEYS")),service=(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||defaultKey("SUPABASE_SECRET_KEYS")),maps=mapsCredential;
  if(!url||!anon||!service){console.error("mp-secure-checkout missing Supabase configuration",{url:!!url,publicKey:!!anon,secretKey:!!service});return send({error:"server_not_configured"},503);}
  if(!maps){console.error("mp-secure-checkout GOOGLE_MAPS_API_KEY not available to runtime");return send({error:"maps_not_configured"},503);}
+ if(/^[a-f0-9]{64}$/i.test(maps))return send({error:"maps_credential_invalid"},503);
  const bearer=req.headers.get("authorization")||"";
  if(!/^Bearer\s+\S+/i.test(bearer))return send({error:"authentication_required"},401);
  const token=bearer.replace(/^Bearer\s+/i,"");

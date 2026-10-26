@@ -71,6 +71,8 @@ for (const slug of ['mp-delivery-quote', 'mp-secure-checkout']) {
     ['standard secret name', { GOOGLE_MAPS_API_KEY: '  fixture-google-key  ' }],
     ['space-separated secret name', { 'GOOGLE MAPS API KEY': 'fixture-google-key' }],
     ['missing secret', {}],
+    ['digest accidentally stored', { GOOGLE_MAPS_API_KEY: 'a'.repeat(64) }],
+    ['valid alternate over digest', { GOOGLE_MAPS_API_KEY: 'a'.repeat(64), 'GOOGLE MAPS API KEY': 'fixture-google-key' }],
   ]) {
     test(`${slug}: handles ${label} without logging its value`, async () => {
       const source = readFileSync(new URL(`./${slug}/index.ts`, import.meta.url), 'utf8')
@@ -90,9 +92,9 @@ for (const slug of ['mp-delivery-quote', 'mp-secure-checkout']) {
         body: JSON.stringify({ store_id: 'invalid' }),
       }));
       const body = await response.json();
-      if (label === 'missing secret') {
+      if (['missing secret', 'digest accidentally stored'].includes(label)) {
         assert.equal(response.status, 503);
-        assert.equal(body.error, 'maps_not_configured');
+        assert.equal(body.error, label === 'missing secret' ? 'maps_not_configured' : 'maps_credential_invalid');
       } else {
         assert.equal(response.status, 400);
         assert.equal(body.error, slug === 'mp-delivery-quote' ? 'invalid_store' : 'invalid_checkout');

@@ -1,3 +1,4 @@
+import { approvedPaymentUrl, paymentActions, cartAfterPayment, paymentIssueMessage } from './payments.js';
 import { db,result,state,loadPublic,loadUser,can,money,dateTime,statusText,cart,saveCart,orderRequestKey,toggleFavorite,validCPF,formObject } from './data.js';
 import { esc,icon,btn,route,field,select,textarea,card,badge,empty,shell,modal,closeModal,toast } from './ui.js';
 import { home,updateCatalog,tutor,booking,checkout,storePage,vetPage,courierPage,adminPage,petEditor,specialtyPage } from './pages.js';
@@ -22,9 +23,9 @@ async function updateDeliveryQuote(){
  if(stores.length!==1||!stores[0]){status.textContent='Para finalizar, selecione produtos de uma única loja.';if(value)value.textContent='Indisponível';if(grand)grand.textContent='Frete indisponível';if(paymentState)paymentState.textContent='Pagamento bloqueado: produtos devem ser da mesma loja.';return;}
  status.textContent='Calculando automaticamente a rota até seu endereço…';
  try{
- const {data,error}=await db.functions.invoke('mp-delivery-quote',{body:{store_id:stores[0]}});
+ const {data,error}=await withDeadline(()=>db.functions.invoke('mp-delivery-quote',{body:{store_id:stores[0]}}),18000);
  if(seq!==deliverySeq||key!==deliveryFingerprint())return;
- if(error||!data?.available||!Number.isSafeInteger(data.delivery_cents)){let info=data;try{if(error?.context?.json)info=await error.context.json();}catch{}const cause=info?.error;const description={maps_not_configured:'A chave Google Routes não está configurada.',store_unavailable:'A loja está fechada ou sem endereço completo.',delivery_address_incomplete:'Complete o endereço de entrega no seu perfil.',route_provider_failed:'Google Maps recusou a consulta de rota. Verifique a chave e os endereços.',route_unavailable:'Rota não localizada. Verifique os endereços da loja e de entrega.',route_service_unreachable:'O serviço de rotas não respondeu. Tente novamente.'};throw Error(description[cause]||'Frete indisponível. Confira endereço e rota.');}
+ if(error||!data?.available||!Number.isSafeInteger(data.delivery_cents)){let info=data;try{if(error?.context?.json)info=await error.context.json();}catch{}const cause=info?.error;throw Error(paymentIssueMessage(cause,can('admin')));}
  deliveryQuote=data;deliveryQuoteKey=key;
  const subtotal=cart().reduce((sum,i)=>sum+(state.products.find(p=>p.id===i.product_id)?.price_cents||0)*i.quantity,0);
  status.textContent='Frete calculado automaticamente • '+(data.distance_m/1000).toFixed(2).replace('.',',')+' km';
@@ -60,6 +61,45 @@ function friendly(error) {
 }
 async function refresh() {await Promise.all([loadPublic(),loadUser()]);await render();}
 function requireLogin() {if(state.user)return true;authModal();return false;}
+
+async function getMyOrder(id) {
+ if(!state.user||!/^[0-9a-f-]{36}$/i.test(id))throw Error('Entre na sua conta para consultar este pedido.');
+ const uid=state.user.id;
+ const order=state.orders.find(o=>o.id===id)||await result(db.from('mp_orders').select('*,mp_order_items(*)').eq('id',id).eq('buyer_id',uid).maybeSingle());
+ if(!order||order.buyer_id!==uid||state.user?.id!==uid)throw Error('Pedido não encontrado para esta conta.');
+ return order;
+}
+async function paymentInfo(data,error) {
+ if(!error)return data;
+ try {if(error.context?.json)return await error.context.json();}catch{}
+ return data;
+}
+function openPayment(value) {
+ const url=approvedPaymentUrl(value);
+ if(!url)throw Error('Não foi possível abrir um endereço seguro de pagamento.');
+ window.top.location.assign(url);
+}
+async function verifyPayment(id) {
+ const order=await getMyOrder(id),params=new URLSearchParams(location.search);
+ const body={action:'check',order_id:id};
+ if(params.get('order_nsu')==='mp-'+id){
+  for(const key of ['transaction_nsu','slug']){const value=params.get(key);if(value&&value.length<200)body[key]=value;}
+ }
+ const {data,error}=await withDeadline(()=>db.functions.invoke('mp-infinitepay',{body}),18000);
+ if(error)throw Error('Não foi possível consultar o pagamento agora. Tente Verificar pagamento novamente em instantes.');
+ if(data?.paid!==true){toast('Pagamento ainda não confirmado. Aguarde e toque em Verificar pagamento novamente.');return false;}
+ const marker='mundopet.paid-cart.'+state.user.id+'.'+id;
+ if(localStorage.getItem(marker)!=='1'){
+  saveCart(cartAfterPayment(cart(),order.mp_order_items||[]));
+  localStorage.setItem(marker,'1');
+ }
+ if(params.get('order_nsu')==='mp-'+id){
+  const clean=new URL(location.href);for(const key of ['receipt_url','order_nsu','slug','capture_method','transaction_nsu'])clean.searchParams.delete(key);
+  history.replaceState({},'',clean.pathname+clean.search+clean.hash);
+ }
+ await refresh();toast('Pagamento confirmado! Acompanhe o pedido em Meus pedidos.');return true;
+}
+
 function authModal(mode='login') {
  if(mode==='recover'){modal('Recuperar senha',`<form id="mp-recovery-form" class="mp-stack">${field('email','E-mail cadastrado','','email','required autocomplete="email"')}<p class="mp-muted">Enviaremos um link para redefinir sua senha. Confira também a caixa de spam.</p><p class="mp-error" role="alert"></p><button type="submit" class="mp-btn mp-full">Enviar link de recuperação</button>${btn('Voltar para entrar','login','outline mp-full')}</form>`);return;}
 
@@ -205,7 +245,31 @@ const actions={
  'edit-pet':el=>{const p=state.pets.find(p=>p.id===el.dataset.id);modal('Editar pet',petEditor(p));},
  'cart-quantity':async el=>{const items=cart();const item=items.find(i=>i.product_id===el.dataset.id);if(!item)return;const qty=item.quantity+Number(el.dataset.change);const p=state.products.find(p=>p.id===item.product_id);if(qty>Math.min(p?.stock||0,99))throw new Error('Quantidade maior que o estoque disponível.');item.quantity=qty;saveCart(items);await render();},
  'remove-cart':async el=>{saveCart(cart().filter(i=>i.product_id!==el.dataset.id));await render();},
- checkout:async(el)=>{if(!requireLogin())return;const a=state.profile?.address;if(!a?.street||!a.number||!a.city||!a.state)throw new Error('Complete o endereço no perfil.');const items=cart();if(!items.length)throw new Error('Seu carrinho está vazio.');if(!deliveryQuote||deliveryQuoteKey!==deliveryFingerprint())throw new Error('Aguarde o cálculo automático do frete antes de pagar.');const method=el.dataset.method;if(!['infinitepay_pix','infinitepay_card'].includes(method))throw new Error('Selecione Pix ou cartão.');const {data,error}=await db.functions.invoke('mp-secure-checkout',{body:{cart:items,request_id:orderRequestKey(),payment_method:method}});if(error||!data?.url){let info=data;try{if(error?.context?.json)info=await error.context.json();}catch{}const code=info?.error;const details={checkout_not_configured:'Configuração de pagamento ou frete incompleta no servidor.',server_not_configured:'Serviço do checkout ainda não configurado no Supabase.',maps_not_configured:'Frete temporariamente indisponível: a integração Google Routes precisa ser configurada no Supabase.',authentication_required:'Entre novamente na sua conta para continuar.',invalid_session:'Sua sessão expirou. Saia da conta e entre novamente.',invalid_checkout:'Dados do pedido inválidos. Atualize o carrinho.',product_unavailable:'Produto indisponível. Atualize o carrinho.',multiple_stores:'Finalize produtos de uma loja por vez.',store_unavailable:'A loja está fechada ou sem endereço cadastrado.',delivery_address_incomplete:'Complete o endereço de entrega no seu perfil.',shipping_provider_failed:'A rota não pôde ser calculada. Confira o endereço completo da loja e do cliente.',route_not_found:'O Google Maps não encontrou uma rota. Confira os endereços.',order_creation_failed:'Não foi possível criar o pedido no banco de dados.',payment_link_failed:'O link da InfinitePay não pôde ser gerado. Verifique a integração financeira.',payment_url_invalid:'A InfinitePay devolveu um endereço não reconhecido.'};throw new Error(details[code]||('Falha ao finalizar o pedido ('+(code||'conexão')+'). Tente novamente.'));}const url=new URL(data.url);if(url.protocol!=='https:'||!(url.hostname==='checkout.infinitepay.com.br'||url.hostname==='infinitepay.io'||url.hostname.endsWith('.infinitepay.io')))throw new Error('Link de pagamento inválido.');window.top.location.assign(url.href);},
+ checkout:async(el)=>{
+  if(!requireLogin())return;
+  const a=state.profile?.address,items=cart();
+  if(!a?.street||!a.number||!a.city||!a.state)throw Error('Complete o endereço no perfil.');
+  if(!items.length)throw Error('Seu carrinho está vazio.');
+  if(!deliveryQuote||deliveryQuoteKey!==deliveryFingerprint())throw Error('Aguarde o cálculo automático do frete antes de pagar.');
+  const method=el.dataset.method;
+  if(!['infinitepay_pix','infinitepay_card'].includes(method))throw Error('Selecione Pix ou cartão.');
+  const {data,error}=await withDeadline(()=>db.functions.invoke('mp-secure-checkout',{body:{cart:items,request_id:orderRequestKey(),payment_method:method}}),40000);
+  if(error||!data?.url){
+   const info=await paymentInfo(data,error);
+   if(['payment_link_failed','payment_url_invalid'].includes(info?.error)){await loadUser();await render();}
+   throw Error(paymentIssueMessage(info?.error,can('admin')));
+  }
+  openPayment(data.url);
+ },
+ 'resume-payment':async el=>{
+  if(!requireLogin())return;
+  const order=await getMyOrder(el.dataset.id);
+  if(!paymentActions(order).pay)throw Error('Este pedido não está disponível para pagamento. Atualize Meus pedidos.');
+  const {data,error}=await withDeadline(()=>db.functions.invoke('mp-infinitepay',{body:{action:'create',order_id:order.id}}),22000);
+  if(error||!data?.url)throw Error('Não foi possível abrir o pagamento deste pedido. Tente novamente em instantes.');
+  openPayment(data.url);
+ },
+ 'check-payment':async el=>{if(requireLogin())await verifyPayment(el.dataset.id);},
  'order-status':el=>orderStatus(el.dataset.id,el.dataset.status),
  'order-details':el=>orderDetails(el.dataset.id),
  'print-order':()=>{if(!activeOrder)return;const o=activeOrder;const w=window.open('','_blank');if(!w)throw new Error('Permita abrir a janela de impressão no navegador.');w.document.write(`<!doctype html><html lang="pt-BR"><head><title>Pedido Mundo Pet</title><style>body{font:16px system-ui;padding:28px;max-width:700px}h1{color:#006c49}li{margin:10px 0}</style></head><body><h1>Mundo Pet</h1><h2>Pedido #${o.id.slice(0,8)}</h2><p>${o.is_demo?'DEMONSTRAÇÃO — SEM COBRANÇA':'Comprovante do pedido'}</p><p>${dateTime(o.created_at)}</p><ul>${o.mp_order_items.map(i=>`<li>${i.quantity}× ${esc(i.name)} • ${money(i.unit_cents*i.quantity)}</li>`).join('')}</ul>${o.discount_cents?`<p>Desconto do cupom: − ${money(o.discount_cents)}</p>`:''}<strong>Total: ${money(o.total_cents)}</strong><p>Pagamento: ${o.payment_status==='paid'?'confirmado':'não recebido'}</p><p>Entrega: ${esc(o.address.street)}, ${esc(o.address.number)} • ${esc(o.address.city)}</p><button onclick="window.print()">Imprimir</button></body></html>`);w.document.close();},
@@ -323,18 +387,10 @@ async function confirmPaymentReturn(){
  const params=new URLSearchParams(location.search),nsu=params.get('order_nsu');
  if(page!=='cart'||!nsu||!/^mp-[0-9a-f-]{36}$/i.test(nsu))return;
  if(!state.user){toast('Entre na sua conta para confirmar o pagamento e acompanhar o pedido.',true);return;}
- const id=nsu.slice(3);
- try{
-  const body={action:'check',order_id:id};
-  if(params.has('transaction_nsu'))body.transaction_nsu=params.get('transaction_nsu');
-  if(params.has('slug'))body.slug=params.get('slug');
-  const {data,error}=await db.functions.invoke('mp-infinitepay',{body});
-  if(error)throw error;
-  if(data?.paid===true){saveCart([]);await refresh();toast('Pagamento confirmado! Acompanhe o pedido em Meus pedidos.');}
-  else toast('Pagamento ainda não confirmado. Atualize Meus pedidos em instantes.');
- }catch{toast('Não foi possível consultar o pagamento agora. Confira em Meus pedidos.',true);}
- const clean=new URL(location.href);['receipt_url','order_nsu','slug','capture_method','transaction_nsu'].forEach(k=>clean.searchParams.delete(k));history.replaceState({},'',clean.pathname+clean.search+clean.hash);
+ try{await verifyPayment(nsu.slice(3));}
+ catch{toast('Não foi possível consultar o pagamento agora. Tente Verificar pagamento em Meus pedidos.',true);}
 }
+
 async function init(){
  await render();
  const {data:{session},error}=await withDeadline(()=>db.auth.getSession());if(error)throw error;state.user=session?.user||null;

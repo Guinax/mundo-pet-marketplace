@@ -1,13 +1,13 @@
 {
   "name": "mundo-pet-marketplace",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "node node_modules/vite/bin/vite.js --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test src/data.test.js supabase/functions/cors.test.js"
+    "test": "node --test src/data.test.js src/payments.test.js supabase/functions/cors.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",

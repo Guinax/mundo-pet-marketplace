@@ -1,43 +1,38 @@
-# Mundo Pet
+# Mundo Pet Marketplace
 
-Aplicação React/Vite com o visual móvel do Stitch e funcionalidades conectadas ao Supabase da conta escolhida. O runtime compartilhado atende as oito rotas; a entrada React conserva o acesso pela Home.
+Aplicação React/Vite com cadastro de tutores e pets, catálogo, carrinho, checkout InfinitePay e painéis de lojas, profissionais, entregadores e administração.
 
-## Funcionalidades
+## Atualização 0.6.0 — 26/10/2026
 
-- Login por e-mail e senha e criação de conta com confirmação por e-mail.
-- Perfil do tutor, endereço, validação de CPF e cadastro/edição de múltiplos pets, incluindo foto privada.
-- Catálogo, busca, categorias, favoritos e carrinho persistente neste navegador.
-- Pedidos de demonstração com preços calculados no servidor, estoque transacional, idempotência e cupom MUNDOPET10.
-- Agendamentos de demonstração vinculados ao pet, com horários sem sobreposição.
-- Pet shop: disponibilidade, pedidos, catálogo, preço e estoque; veterinário: agenda, pacientes e anotações clínicas; entregador: online, ofertas, aceite, coleta e conclusão por código; administrador: credenciamento e visão das operações.
-- Conversa restrita aos participantes do pedido; comprovante/etiqueta imprimível; rota externa no Google Maps.
-- Todas as tabelas mp_ usam RLS. Apenas a chave pública do cliente é empacotada. Funções privilegiadas ficam no schema não exposto mp_private.
+- Meus pedidos permite continuar um pagamento pendente e consultar sua confirmação. A retomada usa o mesmo pedido e o endpoint autenticado da InfinitePay.
+- O retorno do provedor só confirma pagamento depois da consulta do servidor. Os dados de retorno são preservados enquanto a consulta falhar ou estiver pendente.
+- A confirmação desconta do carrinho apenas os produtos e as quantidades daquele pedido, com marcador por conta/pedido para não repetir a remoção.
+- O checkout informa falhas de frete sem ficar indefinidamente em cálculo. Orientações de configuração são mostradas apenas ao administrador.
+- As funções de frete reconhecem `GOOGLE_MAPS_API_KEY` e o nome alternativo com espaços. Um valor com formato de SHA-256 é tratado como configuração inválida, sem expor a credencial.
+- A atualização do banco adicionou 18 índices de apoio e otimizou 13 políticas com `(select auth.uid())`. Foram preservadas as regras, papéis e proteção RLS. Script aplicado: `database/review_performance.sql`; migração remota: `review_supporting_indexes_and_auth_initplans`.
 
-## Desenvolvimento
+## Configuração
 
-`npm ci`, `npm run dev`, `npm test`, `npm run build`.
+A infraestrutura do Mundo Pet usa a conta wap33003@gmail.com. O administrador único confirmado no banco é wap33000@gmail.com.
 
-O `vite.config.js` prepara as rotas estáticas e a entrada `assets/runtime.js` no desenvolvimento e no build. Os arquivos HTML carregam fontes do Google e o CSS local.
+O frontend usa somente a URL e chave pública de `src/config.json`, para o projeto Supabase `sppecskjgggfahokgccc`. Não coloque chaves secretas no frontend, no Git ou em mensagens de erro.
 
-## Banco
+As funções em `supabase/functions/` executam o frete, a criação segura de pedidos, o link InfinitePay e a confirmação por webhook. A chave Google deve ser salva no ambiente das Edge Functions. Copie a chave original em Google Cloud → Credenciais → Mostrar chave. O campo Digest do Supabase não é o valor original e não deve ser cadastrado como chave. Também é necessário habilitar Routes API, faturamento e restrições compatíveis com chamadas do servidor.
 
-Os scripts em `database/` descrevem as alterações aplicadas. `schema.sql` é o snapshot inicial; `photos.sql` e `coupon.sql` adicionam os recursos correspondentes. Não reaplicar scripts de criação no banco já instalado. `verify.sql` roda fixtures dentro de uma transação e termina com rollback, sem criar/excluir contas reais nem deixar pedidos de teste.
+O recebedor configurado é `wgsolucoesfinaceira`. `INFINITEPAY_API_KEY` é usada apenas no servidor quando disponível. Não mude o contrato de opções ou webhook sem validar a versão da integração na conta.
 
-## Acesso e operação
+## Desenvolvimento e verificação
 
-O administrador único confirmado no banco em 25/10/2026 é wap33000@gmail.com. A conta de infraestrutura do Mundo Pet é wap33003@gmail.com. Parceiros solicitam credenciamento pelo perfil; somente o administrador pode aprová-los. Não se atribui papel profissional por dados editáveis do usuário.
+Execute `npm ci`, `npm test` e `npm run build`. O build preserva as páginas HTML em `public/` e gera `assets/runtime.js` para a aplicação.
 
-Cadastros e fotos são persistidos de verdade. A loja e os serviços de catálogo iniciais são explicitamente demonstrativos. Compras, agendamentos, entrega e cupom podem ser exercitados de ponta a ponta sem cobrança ou contratação real. As funções de compra/agendamento bloqueiam ofertas reais até concluir o cadastro operacional. Pix/cartão, cobrança, webhooks, comissões, repasses/saques, disponibilidade real de profissionais, teleconsulta e assinatura de receitas ainda exigem configuração e integração próprias. A interface não afirma que esses serviços foram ativados e não fabrica saldos.
+Os testes cobrem valores em centavos, carrinho, CPF, URLs de pagamento, disponibilidade de ações de pedidos, limpeza de carrinho, CORS e erros/configuração de frete sem registro de credenciais. Não substituem compra real ou validação do painel autenticado.
 
-O projeto Joias e seus registros mj_ foram preservados. A Adega Maromba não foi modificada. Não foram excluídos usuários.
+## Estado operacional e limites
 
+As correções de navegação, demonstração, instrução do código de entrega e CORS foram publicadas na revisão anterior. Os pagamentos reais ainda exigem validação ponta a ponta; o último diagnóstico identificou um segredo com 64 caracteres hexadecimais, compatível com um digest SHA-256, e consultas de rota com erro.
 
-## Estado verificado em 25/10/2026
+Agendamento comercial, comissão conciliada, repasses automáticos e saque Pix continuam pendentes de integração. As telas de carteira não executam pagamentos. As duas lojas com mesmo nome exigem conferência manual; não há exclusão automática de cadastros.
 
-O checkout de produtos usa as Edge Functions `mp-delivery-quote`, `mp-secure-checkout`, `mp-infinitepay` e `mp-infinitepay-webhook`, com recebedor `wgsolucoesfinaceira`. Seus fontes implantados foram copiados para `supabase/functions/` nesta revisão. Não inclua credenciais nesses fontes.
+Os arquivos iniciais `database/schema.sql`, `photos.sql` e `coupon.sql` são históricos e não representam todo o banco atual. Não os reaplique em um projeto instalado. O banco atual mantém 17 tabelas públicas com RLS. Os avisos de funções privilegiadas, proteção contra senhas vazadas e políticas sobrepostas precisam continuar sendo acompanhados.
 
-O frete e o checkout estão bloqueados porque `GOOGLE_MAPS_API_KEY` não está disponível no ambiente das Edge Functions do projeto `sppecskjgggfahokgccc`. Configurar apenas uma variável na Vercel não resolve esse ambiente. Validar Routes API, faturamento e restrições da chave no mesmo projeto Google Cloud antes de testar novamente. `INFINITEPAY_API_KEY` é lida opcionalmente pelo código; sua presença não foi confirmada.
-
-A correção local de CORS de `mp-infinitepay` permite `x-client-info`, usado pelo cliente Supabase. Ela ainda precisa de implantação autorizada; nenhuma alteração desta revisão foi publicada.
-
-O schema inicial e as instruções demonstrativas acima não refletem todos os objetos implantados. Não recrie o banco a partir desse snapshot. As 17 tabelas públicas têm RLS; sete funções públicas SECURITY DEFINER têm verificações de identidade/papel e precisam continuar sendo avaliadas caso a autorização mude. Agendamento comercial, repasses e saques não estão habilitados.
+Nenhuma atualização deve excluir usuários, alterar preços ou modificar a Adega Maromba. Publicações devem permanecer dentro da autorização do usuário.

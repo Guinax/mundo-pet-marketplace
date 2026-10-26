@@ -1,7 +1,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.0";
 // Accept the documented name and the space-separated name used during setup.
-const mapsCredential = ["GOOGLE_MAPS_API_KEY", "GOOGLE MAPS API KEY"]
- .map(name => Deno.env.get(name)?.trim()).find(Boolean) || "";
+const mapsCandidates = ["GOOGLE_MAPS_API_KEY", "GOOGLE MAPS API KEY"]
+ .map(name => Deno.env.get(name)?.trim()).filter(Boolean);
+const mapsCredential = mapsCandidates.find(value => !/^[a-f0-9]{64}$/i.test(value!)) || mapsCandidates[0] || "";
 console.info("mp-delivery-quote maps secret configured", Boolean(mapsCredential), { characters: mapsCredential.length, resembles_sha256: /^[a-f0-9]{64}$/i.test(mapsCredential) });
 const defaultKey=(kind:string)=>{try{const key=JSON.parse(Deno.env.get(kind)||"{}")?.default;return typeof key==="string"?key:"";}catch{return "";}};
 const h={"content-type":"application/json","access-control-allow-origin":"*","access-control-allow-headers":"authorization,apikey,content-type,x-client-info","access-control-allow-methods":"POST,OPTIONS"};
@@ -18,6 +19,7 @@ Deno.serve(async(req)=>{
  const {data:{user},error:authError}=await auth.auth.getUser(jwt);
  if(authError||!user)return reply({error:"invalid_session"},401);
  if(!maps){console.error("mp-delivery-quote GOOGLE_MAPS_API_KEY not available to runtime");return reply({available:false,error:"maps_not_configured"},503);}
+ if(/^[a-f0-9]{64}$/i.test(maps))return reply({available:false,error:"maps_credential_invalid"},503);
  const input=await req.json().catch(()=>null);
  const storeId=input?.store_id;
  if(typeof storeId!=="string"||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(storeId))return reply({error:"invalid_store"},400);
