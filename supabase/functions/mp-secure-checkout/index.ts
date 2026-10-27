@@ -13,8 +13,6 @@ Deno.serve(async req=>{
  if(req.method!=="POST")return send({error:"method_not_allowed"},405);
  const url=Deno.env.get("SUPABASE_URL"),anon=(Deno.env.get("SUPABASE_ANON_KEY")||defaultKey("SUPABASE_PUBLISHABLE_KEYS")),service=(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||defaultKey("SUPABASE_SECRET_KEYS")),maps=mapsCredential;
  if(!url||!anon||!service){console.error("mp-secure-checkout missing Supabase configuration",{url:!!url,publicKey:!!anon,secretKey:!!service});return send({error:"server_not_configured"},503);}
- if(!maps){console.error("mp-secure-checkout GOOGLE_MAPS_API_KEY not available to runtime");return send({error:"maps_not_configured"},503);}
- if(/^[a-f0-9]{64}$/i.test(maps))return send({error:"maps_credential_invalid"},503);
  const bearer=req.headers.get("authorization")||"";
  if(!/^Bearer\s+\S+/i.test(bearer))return send({error:"authentication_required"},401);
  const token=bearer.replace(/^Bearer\s+/i,"");
@@ -26,17 +24,26 @@ Deno.serve(async req=>{
  const items=body?.cart,request=body?.request_id,method=body?.payment_method;
  if(!Array.isArray(items)||items.length<1||items.length>30||typeof request!=="string"||!uuid.test(request)||!["infinitepay_pix","infinitepay_card"].includes(method))return send({error:"invalid_checkout"},400);
  if(items.some(x=>!x||typeof x.product_id!=="string"||!uuid.test(x.product_id)||!Number.isInteger(x.quantity)||x.quantity<1||x.quantity>99))return send({error:"invalid_cart"},400);
+ const mode=body?.fulfillment_method;
+ if(mode!=="pickup"&&mode!=="delivery")return send({error:"fulfillment_required"},400);
  const admin=createClient(url,service,{auth:{persistSession:false}});
- const {data:products,error:pErr}=await admin.from("mp_products").select("id,store_id").in("id",items.map(x=>x.product_id));
+ const {data:products,error:pErr}=await admin.from("mp_products").select("id,store_id,pickup_enabled,delivery_enabled").in("id",items.map(x=>x.product_id));
  if(pErr||!products||products.length!==new Set(items.map(x=>x.product_id)).size)return send({error:"product_unavailable"},409);
+ if(products.some(x=>mode==="pickup"?x.pickup_enabled===false:x.delivery_enabled===false))return send({error:"fulfillment_unavailable"},409);
  const stores=[...new Set(products.map(x=>x.store_id))];
  if(stores.length!==1)return send({error:"multiple_stores"},409);
  const [{data:store},{data:profile}]=await Promise.all([
-  admin.from("mp_stores").select("id,address,is_open,is_demo").eq("id",stores[0]).maybeSingle(),
+  admin.from("mp_stores").select("id,name,address,is_open,is_demo").eq("id",stores[0]).maybeSingle(),
   admin.from("mp_profiles").select("address").eq("user_id",user.id).maybeSingle()
  ]);
- if(!store||!store.is_open||store.is_demo||!store.address)return send({error:"store_unavailable"},409);
- const a=profile?.address||{};
+ if(!store||store.is_demo||!store.address)return send({error:"store_unavailable"},409);
+ let a=profile?.address||{};
+ let shipping=0,meters=0;
+ if(mode==="pickup"){
+  a={street:store.address,number:"s/n",city:"Retirada na loja",state:"SP",store_name:store.name};
+ }else{
+ if(!maps)return send({error:"maps_not_configured"},503);
+ if(/^[a-f0-9]{64}$/i.test(maps))return send({error:"maps_credential_invalid"},503);
  if(!a.street||!a.number||!a.city||!a.state)return send({error:"delivery_address_incomplete"},422);
  const destination=[a.street,a.number,a.district,a.city,a.state,"Brasil"].filter(Boolean).join(", ");
  const result=await fetch("https://routes.googleapis.com/directions/v2:computeRoutes",{
@@ -51,11 +58,12 @@ Deno.serve(async req=>{
   console.error("mp-secure-checkout Google Routes rejected request",{provider_status:result.status,provider_code:safeCode(failure?.error?.status),reasons});
   return send({error:"shipping_provider_failed",provider_status:result.status},502);
  }
- const route=await result.json(),meters=route?.routes?.[0]?.distanceMeters;
+ const route=await result.json();meters=route?.routes?.[0]?.distanceMeters;
  if(!Number.isSafeInteger(meters)||meters<0)return send({error:"route_not_found"},422);
- const shipping=meters<=1500?500:meters<=3000?750:750+Math.ceil((meters-3000)*150/1000);
- const {data:orderId,error:orderErr}=await admin.rpc("mp_create_verified_payment_order",{
-  p_buyer:user.id,p_cart:items,p_address:a,p_request:request,p_shipping_cents:shipping,p_method:method
+ shipping=meters<=3000?500:500+Math.ceil((meters-3000)*150/1000);
+ }
+ const {data:orderId,error:orderErr}=await admin.rpc("mp_create_fulfillment_order",{
+  p_buyer:user.id,p_cart:items,p_address:a,p_request:request,p_shipping_cents:shipping,p_method:method,p_fulfillment:mode
  });
  if(orderErr){console.error("create verified order",orderErr.message);return send({error:"order_creation_failed"},409);}
  const paid=await fetch(url+"/functions/v1/mp-infinitepay",{
@@ -65,6 +73,7 @@ Deno.serve(async req=>{
  const p=await paid.json().catch(()=>({}));
  if(!paid.ok||typeof p.url!=="string"){console.error("Payment link error",paid.status,String(p?.error||"unknown"));return send({error:"payment_link_failed",detail:typeof p?.error==="string"?p.error.slice(0,100):undefined,provider_status:paid.status},502);}
  const u=new URL(p.url);if(u.protocol!=="https:"||!(u.hostname==="checkout.infinitepay.com.br"||u.hostname==="infinitepay.io"||u.hostname.endsWith(".infinitepay.io")))return send({error:"payment_url_invalid"},502);
- return send({order_id:orderId,url:p.url,delivery_cents:shipping,distance_m:meters});
+ return send({order_id:orderId,url:p.url,delivery_cents:shipping,distance_m:meters,fulfillment_method:mode});
  }catch(err){console.error("mp-secure-checkout",err);return send({error:"checkout_failed"},500);}
 });
+

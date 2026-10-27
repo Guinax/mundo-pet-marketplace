@@ -60,7 +60,7 @@ for (const slug of ['mp-delivery-quote', 'mp-secure-checkout']) {
     const response = await handler(new Request('https://example.test', {
       method: 'POST', headers: { Authorization: 'Bearer fixture', 'Content-Type': 'application/json' },
       body: JSON.stringify({ store_id: store, cart: [{ product_id: product, quantity: 1 }],
-        request_id: '33333333-3333-4333-8333-333333333333', payment_method: 'infinitepay_pix' }),
+        request_id: '33333333-3333-4333-8333-333333333333', payment_method: 'infinitepay_pix', fulfillment_method: 'delivery' }),
     }));
     assert.equal(response.status, 502);
     assert.equal((await response.json()).provider_status, 403);
@@ -92,7 +92,7 @@ for (const slug of ['mp-delivery-quote', 'mp-secure-checkout']) {
         body: JSON.stringify({ store_id: 'invalid' }),
       }));
       const body = await response.json();
-      if (['missing secret', 'digest accidentally stored'].includes(label)) {
+      if (slug === 'mp-delivery-quote' && ['missing secret', 'digest accidentally stored'].includes(label)) {
         assert.equal(response.status, 503);
         assert.equal(body.error, label === 'missing secret' ? 'maps_not_configured' : 'maps_credential_invalid');
       } else {
@@ -103,3 +103,4 @@ for (const slug of ['mp-delivery-quote', 'mp-secure-checkout']) {
     });
   }
 }
+

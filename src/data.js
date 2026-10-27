@@ -4,7 +4,7 @@ import config from './config.json' with { type: 'json' };
 export const db = createClient(config.url, config.key, {
   auth: { storageKey: 'mundopet.auth.fresh.v2', detectSessionInUrl: true, persistSession: true },
 });
-export const state = { user: null, profile: null, roles: [], pets: [], products: [], services: [], stores: [], orders: [], appointments: [], campaigns: [] };
+export const state = { user: null, profile: null, roles: [], pets: [], products: [], services: [], stores: [], orders: [], appointments: [], campaigns: [], fulfillmentMode: null };
 export async function result(query) { const { data, error } = await query; if (error) throw error; return data; }
 export async function loadPublic() {
   [state.products, state.services, state.stores, state.campaigns] = await Promise.all([
@@ -48,3 +48,4 @@ export function validCPF(value) {
 }
 export function cartTotal(items,products) { return items.reduce((sum,item)=>sum+(products.find(p=>p.id===item.product_id)?.price_cents||0)*item.quantity,0); }
 export function formObject(form) { return Object.fromEntries(new FormData(form)); }
+

@@ -1,0 +1,30 @@
+begin;
+do $$
+declare actor uuid; sid uuid:=gen_random_uuid();pid uuid:=gen_random_uuid();rid uuid:=gen_random_uuid();oid uuid;again uuid;amount integer;denied boolean;msg text;w jsonb;
+begin
+ select user_id into actor from public.mp_memberships where role='admin' limit 1;
+ if actor is null then raise exception 'Fixture needs existing admin';end if;
+ perform set_config('request.jwt.claim.sub',actor::text,true);
+ insert into public.mp_stores(id,owner_id,name,address,is_open,is_demo) values(sid,actor,'QA rollback only','Rua QA 123 Limeira SP',false,false);
+ insert into public.mp_products(id,store_id,name,category,price_cents,stock,active,approval_status,pickup_enabled,delivery_enabled) values(pid,sid,'QA rollback only','Pet Shops',1000,10,true,'approved',true,true);
+ oid:=public.mp_create_fulfillment_order(actor,jsonb_build_array(jsonb_build_object('product_id',pid,'quantity',2)),'{"street":"Loja QA","number":"s/n","city":"Retirada"}',rid,0,'infinitepay_pix','pickup');
+ if not exists(select 1 from public.mp_orders where id=oid and fulfillment_method='pickup' and delivery_cents=0 and total_cents=2000 and courier_id is null and stock_reserved and scheduled_for>now() and pickup_address='Rua QA 123 Limeira SP') then raise exception 'Pickup order invariant failed';end if;
+ select stock into amount from public.mp_products where id=pid;if amount<>8 then raise exception 'Stock was not reserved';end if;
+ again:=public.mp_create_fulfillment_order(actor,jsonb_build_array(jsonb_build_object('product_id',pid,'quantity',2)),'{"street":"Loja QA","number":"s/n","city":"Retirada"}',rid,0,'infinitepay_pix','pickup');
+ select stock into amount from public.mp_products where id=pid;if amount<>8 or again<>oid then raise exception 'Duplicate reservation';end if;
+ denied:=false;begin perform public.mp_create_fulfillment_order(actor,'[]','{}',gen_random_uuid(),500,'infinitepay_pix','pickup');exception when others then denied:=true;end;
+ if not denied then raise exception 'Pickup shipping accepted';end if;
+ denied:=false;begin update public.mp_orders set fulfillment_method='delivery' where id=oid;exception when others then denied:=true;end;
+ if not denied then raise exception 'Mode changed after checkout';end if;
+ msg:=public.mp_transition_order(oid,'canceled');if msg<>'ok' then raise exception 'Cancellation failed';end if;
+ select stock into amount from public.mp_products where id=pid;if amount<>10 then raise exception 'Stock not restored';end if;
+ if has_function_privilege('authenticated','public.mp_create_fulfillment_order(uuid,jsonb,jsonb,uuid,integer,text,text)','execute') or has_function_privilege('anon','public.mp_create_fulfillment_order(uuid,jsonb,jsonb,uuid,integer,text,text)','execute') then raise exception 'Checkout privilege exposed';end if;
+ w:=public.mp_fulfillment_window(null,'2026-10-27 01:00:00-03');
+ if w->>'starts_at'<>'2026-10-27T12:00:00+00:00' then raise exception 'Midnight schedule %',w;end if;
+ w:=public.mp_fulfillment_window(null,'2026-10-30 18:00:00-03');
+ if (w->>'is_open')::boolean or (w->>'starts_at')::timestamptz<>'2026-11-03 09:00:00-03'::timestamptz then raise exception 'Weekend holiday schedule %',w;end if;
+ w:=public.mp_fulfillment_window(null,'2026-10-27 17:59:59-03');
+ if not (w->>'is_open')::boolean then raise exception 'Service closed early';end if;
+end $$;
+select 'pickup, stock reservation, idempotency, cancellation, privileges, midnight, weekend, holiday and cutoff: passed; fixtures rolled back' as verification;
+rollback;

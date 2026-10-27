@@ -7,7 +7,7 @@
     "dev": "node node_modules/vite/bin/vite.js --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test src/data.test.js src/payments.test.js supabase/functions/cors.test.js src/catalog.test.js src/admin-design.test.js src/admin-model.test.js src/branding.test.js"
+    "test": "node --test src/fulfillment.test.js src/data.test.js src/payments.test.js supabase/functions/cors.test.js src/catalog.test.js src/admin-design.test.js src/admin-model.test.js src/branding.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",
@@ -18,3 +18,4 @@
     "vite": "^7.1.0"
   }
 }
+

@@ -1,3 +1,4 @@
+import {fulfillmentEligibility,validFulfillment,SERVICE_HOURS} from './fulfillment.js';
 import {appShareActions} from './share-app.js';
 import {createAdminHandlers,adminOrderControls} from './admin-console.js';
 import {bindAdminFilters} from './admin-design.js';
@@ -13,33 +14,41 @@ const page=path.includes('mundo_pet_produto')?'product':path.includes('mundo_pet
 let filter=new URLSearchParams(location.search).get('category')||'';let search=new URLSearchParams(location.search).get('q')||'';let catalogOptions={sort:'relevance',brand:'',inStock:false,maxPrice:0};let detailQuantity=1;let rendering=0;let activeOrder=null;let openingAccount=false;
 let locationWatch=null;let locationSent=0;
 let deliveryQuote=null;let deliveryQuoteKey='';let deliverySeq=0;
-function deliveryFingerprint(){const items=cart();const a=state.profile?.address||{};return JSON.stringify({uid:state.user?.id||'',items,address:a});}
+function deliveryFingerprint(){const items=cart();const a=state.profile?.address||{};return JSON.stringify({uid:state.user?.id||'',items,address:a,mode:state.fulfillmentMode});}
 async function updateDeliveryQuote(){
  if(page!=='cart')return;
- const status=document.getElementById('mp-delivery-quote-result'),value=document.getElementById('mp-shipping-value'),grand=document.getElementById('mp-grand-total'),actions=document.getElementById('mp-payment-actions');
+ const status=document.getElementById('mp-delivery-quote-result'),value=document.getElementById('mp-shipping-value'),grand=document.getElementById('mp-grand-total'),actions=document.getElementById('mp-payment-actions'),paymentState=document.getElementById('mp-payment-state'),windowEl=document.getElementById('mp-service-window');
  if(!status)return;
  const key=deliveryFingerprint(),seq=++deliverySeq;deliveryQuote=null;deliveryQuoteKey='';
  const retry=document.getElementById('mp-retry-shipping');if(retry)retry.hidden=true;
- if(actions)actions.querySelectorAll('button').forEach(b=>b.disabled=true);
- if(value)value.textContent='Calculando…';if(grand)grand.textContent='Aguardando frete';const paymentState=document.getElementById('mp-payment-state');if(paymentState)paymentState.textContent='Calculando frete para habilitar o pagamento…';
- const items=cart(),a=state.profile?.address||{};
- if(!state.user||!a.street||!a.number||!a.city||!a.state){status.textContent='Entre na conta e complete seu endereço para calcular o frete automaticamente.';if(value)value.textContent='Endereço pendente';if(grand)grand.textContent='Complete seu endereço';if(paymentState)paymentState.textContent='Pagamento aguardando endereço completo.';return;}
- if(!items.length)return;
- const stores=[...new Set(items.map(i=>state.products.find(p=>p.id===i.product_id)?.store_id))];
- if(stores.length!==1||!stores[0]){status.textContent='Para finalizar, selecione produtos de uma única loja.';if(value)value.textContent='Indisponível';if(grand)grand.textContent='Frete indisponível';if(paymentState)paymentState.textContent='Pagamento bloqueado: produtos devem ser da mesma loja.';return;}
- status.textContent='Calculando automaticamente a rota até seu endereço…';
+ const setEnabled=enabled=>actions?.querySelectorAll('button').forEach(b=>b.disabled=!enabled);
+ const message=text=>{status.textContent=text;if(paymentState)paymentState.textContent=text;};
+ setEnabled(false);
+ const mode=state.fulfillmentMode,items=cart();
+ const eligible=fulfillmentEligibility(mode,items,state.products,state.stores,state.profile?.address||{});
+ if(!state.user){message('Entre na sua conta e escolha entrega ou retirada.');return;}
+ if(eligible.error){message(eligible.error);if(grand)grand.textContent='Aguardando dados';return;}
+ if(value)value.textContent=mode==='pickup'?'Sem frete':'Calculando…';
+ if(grand)grand.textContent='Consultando disponibilidade';
+ message(mode==='pickup'?'Confirmando retirada…':'Calculando frete automaticamente…');
  try{
- const {data,error}=await withDeadline(()=>db.functions.invoke('mp-delivery-quote',{body:{store_id:stores[0]}}),18000);
- if(seq!==deliverySeq||key!==deliveryFingerprint())return;
- if(error||!data?.available||!Number.isSafeInteger(data.delivery_cents)){let info=data;try{if(error?.context?.json)info=await error.context.json();}catch{}const cause=info?.error;throw Error(paymentIssueMessage(cause,can('admin')));}
- deliveryQuote=data;deliveryQuoteKey=key;
- const subtotal=cart().reduce((sum,i)=>sum+(state.products.find(p=>p.id===i.product_id)?.price_cents||0)*i.quantity,0);
- status.textContent='Frete calculado automaticamente • '+(data.distance_m/1000).toFixed(2).replace('.',',')+' km';
- if(value)value.textContent=money(data.delivery_cents);
- if(grand)grand.textContent=money(subtotal+data.delivery_cents);
- if(paymentState)paymentState.textContent='Frete calculado. Escolha Pix ou cartão para finalizar na InfinitePay.';
- if(actions)actions.querySelectorAll('button').forEach(b=>b.disabled=false);
- }catch(err){if(seq!==deliverySeq)return;status.textContent=err?.message||'Frete indisponível. Confira o endereço completo de entrega e da loja.';if(value)value.textContent='Indisponível';if(grand)grand.textContent='Não disponível';if(paymentState)paymentState.textContent='Pagamento temporariamente bloqueado: não foi possível confirmar o frete. Nenhuma cobrança foi criada.';const retry=document.getElementById('mp-retry-shipping');if(retry)retry.hidden=false;}
+  const schedule=await result(db.rpc('mp_fulfillment_window',{p_store:eligible.store.id}));
+  if(seq!==deliverySeq||key!==deliveryFingerprint())return;
+  if(windowEl)windowEl.textContent=schedule.is_open?'Atendimento hoje, até as 18h. Aguarde o aviso de pedido pronto.':'Agendado: atendimento a partir de '+dateTime(schedule.starts_at)+'. Aguarde a confirmação e o aviso de pedido pronto.';
+  let data={available:true,delivery_cents:0,source:'pickup',schedule};
+  if(mode==='delivery'){
+   const reply=await withDeadline(()=>db.functions.invoke('mp-delivery-quote',{body:{store_id:eligible.store.id}}),18000);
+   if(seq!==deliverySeq||key!==deliveryFingerprint())return;
+   if(reply.error||!reply.data?.available||!Number.isSafeInteger(reply.data.delivery_cents)){let info=reply.data;try{if(reply.error?.context?.json)info=await reply.error.context.json();}catch{}throw Error(paymentIssueMessage(info?.error,can('admin')));}
+   data={...reply.data,schedule};
+  }
+  if(seq!==deliverySeq||key!==deliveryFingerprint())return;
+  deliveryQuote=data;deliveryQuoteKey=key;
+  const subtotal=items.reduce((sum,i)=>sum+(state.products.find(p=>p.id===i.product_id)?.price_cents||0)*i.quantity,0);
+  if(value)value.textContent=mode==='pickup'?'Grátis — retirada':money(data.delivery_cents);
+  if(grand)grand.textContent=money(subtotal+data.delivery_cents);
+  message(mode==='pickup'?'Retirada selecionada, sem frete. Escolha Pix ou cartão.':'Entrega selecionada e frete calculado. Escolha Pix ou cartão.');setEnabled(true);
+ }catch(err){if(seq!==deliverySeq)return;message(err?.message||'Não foi possível confirmar a modalidade. Tente novamente.');if(grand)grand.textContent='Aguardando confirmação';if(retry)retry.hidden=false;}
 }
 
 const renderers={home,catalog:catalogPage,product:()=>productPage(detailQuantity),veterinary:()=>sectorPage('veterinary'),grooming:()=>sectorPage('grooming'),tutor,booking,cart:checkout,store:storePage,vet:vetPage,courier:courierPage,admin:adminPage,hotel:()=>sectorPage('hotel'),walkers:()=>sectorPage('walkers'),pharmacy:()=>sectorPage('pharmacy')};
@@ -66,7 +75,7 @@ function friendly(error) {
  if(/duplicate key|unique constraint/i.test(message))return 'Esse registro já existe ou o horário acabou de ser reservado.';
  return message;
 }
-async function refresh() {await Promise.all([loadPublic(),loadUser()]);await render();}
+async function refresh() {const previous=new Map(state.orders.map(o=>[o.id,o.status]));await Promise.all([loadPublic(),loadUser()]);await render();const ready=state.orders.find(o=>o.status==='ready'&&previous.has(o.id)&&previous.get(o.id)!=='ready');if(ready)toast(ready.fulfillment_method==='pickup'?'Seu pedido está pronto para retirada. Confira endereço, horário e código em Meus pedidos.':'Seu pedido está pronto e aguarda a coleta do entregador.');}
 function requireLogin() {if(state.user)return true;authModal();return false;}
 
 async function getMyOrder(id) {
@@ -152,7 +161,7 @@ async function orderDetails(id) {
  const o=await result(db.from('mp_orders').select('*,mp_order_items(*)').eq('id',id).single());
  const [codes,messages]=await Promise.all([result(db.from('mp_delivery_codes').select('code').eq('order_id',id).maybeSingle()),result(db.from('mp_messages').select('*').eq('order_id',id).order('created_at').limit(100))]);
  activeOrder=o;
- modal('Acompanhamento do pedido',`<div class="mp-stack" style="margin-top:16px"><div class="mp-row mp-between"><strong>#MP-${o.id.slice(0,8).toUpperCase()}</strong>${badge(statusText(o.status))}</div><p class="mp-muted">${dateTime(o.created_at)} • ${o.is_demo?'Demonstração sem cobrança':'Pedido'}</p><div class="mp-stage"><span class="${['pending','preparing'].includes(o.status)?'current':''}">Loja</span><span class="${['ready','assigned'].includes(o.status)?'current':''}">Coleta</span><span class="${o.status==='delivering'?'current':''}">Em entrega</span><span class="${o.status==='delivered'?'current':''}">Concluído</span></div>${o.mp_order_items.map(i=>`<div class="mp-labelprice"><span>${i.quantity}× ${esc(i.name)}</span><span>${money(i.unit_cents*i.quantity)}</span></div>`).join('')}${o.discount_cents?`<p>Desconto do cupom: − ${money(o.discount_cents)}</p>`:''}<strong>Total: ${money(o.total_cents)}</strong><p class="mp-muted">Pagamento: ${o.payment_status==='paid'?'confirmado':'não recebido'}</p><p>${icon('location_on')} ${esc(o.address.street)}, ${esc(o.address.number)} – ${esc(o.address.city)}</p>${codes?card('Código de entrega',`<strong style="font-size:26px;letter-spacing:4px">${esc(codes.code)}</strong><p class="mp-muted">Informe ao entregador somente depois de receber seu pedido.</p>`):''}${btn('Atualizar acompanhamento','order-details','outline',`data-id="${o.id}"`)}${btn('Imprimir comprovante / etiqueta','print-order','outline',`data-id="${o.id}"`)}${adminOrderControls(o)}<hr class="mp-divider"><h3>Conversa do pedido</h3><div class="mp-stack">${messages.map(m=>`<div class="mp-banner"><small>${m.sender_id===state.user.id?'Você':'Participante do pedido'} • ${dateTime(m.created_at)}</small><p>${esc(m.body)}</p></div>`).join('')||'<p class="mp-muted">Nenhuma mensagem.</p>'}</div><form id="mp-message-form" data-id="${o.id}" class="mp-stack">${textarea('body','Mensagem','','required maxlength="1000"')}<button class="mp-btn" type="submit">Enviar mensagem</button></form></div>`);
+ modal('Acompanhamento do pedido',`<div class="mp-stack" style="margin-top:16px"><div class="mp-row mp-between"><strong>#MP-${o.id.slice(0,8).toUpperCase()}</strong>${badge(o.fulfillment_method==='pickup'&&o.status==='ready'?'Pronto para retirada':statusText(o.status))}</div><p class="mp-muted">${dateTime(o.created_at)} • ${o.is_demo?'Demonstração sem cobrança':'Pedido'}</p><div class="mp-stage"><span class="${['pending','preparing'].includes(o.status)?'current':''}">Loja</span><span class="${['ready','assigned'].includes(o.status)?'current':''}">Coleta</span><span class="${o.status==='delivering'?'current':''}">Em entrega</span><span class="${o.status==='delivered'?'current':''}">Concluído</span></div>${o.fulfillment_method==='pickup'?'<p><strong>Retirada na loja — sem frete</strong></p>':''}${o.scheduled_for?'<p>Atendimento a partir de '+dateTime(o.scheduled_for)+'. Aguarde o aviso de pedido pronto.</p>':''}${o.mp_order_items.map(i=>`<div class="mp-labelprice"><span>${i.quantity}× ${esc(i.name)}</span><span>${money(i.unit_cents*i.quantity)}</span></div>`).join('')}${o.discount_cents?`<p>Desconto do cupom: − ${money(o.discount_cents)}</p>`:''}<strong>Total: ${money(o.total_cents)}</strong><p class="mp-muted">Pagamento: ${o.payment_status==='paid'?'confirmado':'não recebido'}</p><p>${icon('location_on')} ${o.fulfillment_method==='pickup'?esc(o.pickup_address||o.address.street):esc(o.address.street)+', '+esc(o.address.number)+' – '+esc(o.address.city)}</p>${codes?card(o.fulfillment_method==='pickup'?'Código de retirada':'Código de entrega',`<strong style="font-size:26px;letter-spacing:4px">${esc(codes.code)}</strong><p class="mp-muted">${o.fulfillment_method==='pickup'?'Informe à loja somente ao receber os produtos.':'Informe ao entregador somente depois de receber seu pedido.'}</p>`):''}${btn('Atualizar acompanhamento','order-details','outline',`data-id="${o.id}"`)}${btn('Imprimir comprovante / etiqueta','print-order','outline',`data-id="${o.id}"`)}${adminOrderControls(o)}<hr class="mp-divider"><h3>Conversa do pedido</h3><div class="mp-stack">${messages.map(m=>`<div class="mp-banner"><small>${m.sender_id===state.user.id?'Você':'Participante do pedido'} • ${dateTime(m.created_at)}</small><p>${esc(m.body)}</p></div>`).join('')||'<p class="mp-muted">Nenhuma mensagem.</p>'}</div><form id="mp-message-form" data-id="${o.id}" class="mp-stack">${textarea('body','Mensagem','','required maxlength="1000"')}<button class="mp-btn" type="submit">Enviar mensagem</button></form></div>`);
 }
 async function clinicalModal(id) {
  const a=await result(db.from('mp_appointments').select('*,mp_pets(*)').eq('id',id).single());
@@ -279,12 +288,13 @@ const actions={
  checkout:async(el)=>{
   if(!requireLogin())return;
   const a=state.profile?.address,items=cart();
-  if(!a?.street||!a.number||!a.city||!a.state)throw Error('Complete o endereço no perfil.');
+  if(!validFulfillment(state.fulfillmentMode))throw Error('Escolha entrega ou retirada antes de pagar.');
+  if(state.fulfillmentMode==='delivery'&&(!a?.street||!a.number||!a.city||!a.state))throw Error('Complete o endereço no perfil.');
   if(!items.length)throw Error('Seu carrinho está vazio.');
-  if(!deliveryQuote||deliveryQuoteKey!==deliveryFingerprint())throw Error('Aguarde o cálculo automático do frete antes de pagar.');
+  if(!deliveryQuote||deliveryQuoteKey!==deliveryFingerprint())throw Error('Aguarde a confirmação da modalidade antes de pagar.');
   const method=el.dataset.method;
   if(!['infinitepay_pix','infinitepay_card'].includes(method))throw Error('Selecione Pix ou cartão.');
-  const {data,error}=await withDeadline(()=>db.functions.invoke('mp-secure-checkout',{body:{cart:items,request_id:orderRequestKey(),payment_method:method}}),40000);
+  const {data,error}=await withDeadline(()=>db.functions.invoke('mp-secure-checkout',{body:{cart:items,request_id:orderRequestKey(),payment_method:method,fulfillment_method:state.fulfillmentMode}}),40000);
   if(error||!data?.url){
    const info=await paymentInfo(data,error);
    if(['payment_link_failed','payment_url_invalid'].includes(info?.error)){await loadUser();await render();}
@@ -315,6 +325,8 @@ const actions={
  'toggle-product':async el=>{if(!state.roles.includes('admin'))throw new Error('Ativação depende da aprovação do administrador.');await result(db.from('mp_products').update({active:el.dataset.active==='true',...(el.dataset.active==='true'?{approval_status:'approved'}:{})}).eq('id',el.dataset.id).select('id').single());await refresh();toast('Produto atualizado.');},
  'share-courier-location':()=>shareCourierLocation(),
  'toggle-online':async()=>{if(!state.profile){await result(db.from('mp_profiles').insert({user_id:state.user.id,full_name:state.user.email,online:true,presence_updated_at:new Date().toISOString()}));}else await result(db.from('mp_profiles').update({online:!state.profile.online,presence_updated_at:new Date().toISOString()}).eq('user_id',state.user.id));await refresh();if(!state.profile?.online&&locationWatch!==null){navigator.geolocation.clearWatch(locationWatch);locationWatch=null;}},
+ 'choose-fulfillment':async el=>{if(!validFulfillment(el.dataset.mode))return;state.fulfillmentMode=el.dataset.mode;localStorage.removeItem('mundopet.order-request');await render();},
+ 'pickup-complete':el=>modal('Confirmar retirada',`<form class="mp-stack mp-delivery-form" data-id="${esc(el.dataset.id)}">${field('code','Código do cliente (6 dígitos)','','text','required pattern="[0-9]{6}" inputmode="numeric" maxlength="6"')}<p>Confirme somente após entregar os produtos ao cliente.</p><button class="mp-btn" type="submit">Validar código e concluir retirada</button></form>`),
  'retry-shipping':async()=>{await updateDeliveryQuote();},
  'quote-shipping':async()=>{if(!requireLogin())return;const items=cart();if(!items.length)throw new Error('Adicione produtos ao carrinho.');const product=state.products.find(p=>p.id===items[0].product_id);if(!product)throw new Error('Produto indisponível.');const el=document.getElementById('mp-delivery-quote-result');if(el)el.textContent='Calculando distância da loja até seu endereço…';const {data,error}=await db.functions.invoke('mp-delivery-quote',{body:{store_id:product.store_id}});if(error){if(el)el.textContent='Não foi possível calcular o frete. Verifique o endereço e tente novamente.';throw new Error('Frete indisponível no momento.');}if(!data?.available){if(el)el.textContent='Entrega indisponível. Confira o endereço e a configuração de rotas.';return;}if(el)el.textContent='Frete estimado: '+money(data.delivery_cents)+' • '+(data.distance_m/1000).toFixed(2).replace('.',',')+' km pela rota. Valor sujeito à confirmação no checkout.';},
  'map-route':async el=>{const o=await result(db.from('mp_orders').select('address').eq('id',el.dataset.id).single());const a=o.address;const dest=[a.street,a.number,a.city,a.state].filter(Boolean).join(', ');window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest),'_blank','noopener,noreferrer');},
@@ -454,7 +466,7 @@ init().catch(async error=>{
  }else shell(page,`<div class="mp-runtime-error"><strong>Falha ao conectar ao Mundo Pet</strong><p>${esc(friendly(error))}</p><button class="mp-btn outline" type="button" onclick="location.reload()">Tentar novamente</button></div>`);
 });
 // Poll operational pages without replacing a form or interrupting ongoing typing.
-if(['store','vet','courier','admin'].includes(page))setInterval(()=>{
+if(['store','vet','courier','admin','cart'].includes(page))setInterval(()=>{
  if(!state.user||document.hidden||document.querySelector('[role="dialog"]')||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;
  refresh().catch(error=>toast(friendly(error),true));
 },15000);
@@ -481,3 +493,4 @@ setInterval(async()=>{
  if(locationWatch!==null&&(!state.user||!state.profile?.online)){navigator.geolocation.clearWatch(locationWatch);locationWatch=null;}
 },60000);
 setInterval(()=>{if(page==='admin'&&state.roles.includes('admin')&&document.visibilityState==='visible'&&!document.querySelector('[role="dialog"]')&&!document.querySelector('input:focus,select:focus,textarea:focus'))void render();},30000);
+

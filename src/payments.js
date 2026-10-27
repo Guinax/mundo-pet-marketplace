@@ -30,6 +30,8 @@ export function cartAfterPayment(items, paidItems) {
 
 export function paymentIssueMessage(code, admin = false) {
   const publicMessages = {
+    fulfillment_required: 'Escolha receber em casa ou retirar na loja.',
+    fulfillment_unavailable: 'Um produto não permite a modalidade escolhida.',
     maps_not_configured: 'A entrega está temporariamente indisponível. Tente novamente mais tarde.',
     maps_credential_invalid: 'A entrega está temporariamente indisponível. A loja precisa revisar a integração de frete.',
     store_unavailable: 'A loja está fechada ou ainda não pode realizar entregas.',
@@ -54,3 +56,4 @@ export function paymentIssueMessage(code, admin = false) {
   if (admin && ['server_not_configured', 'checkout_not_configured'].includes(code)) return 'A configuração do checkout no Supabase está incompleta. Revise os segredos do projeto.';
   return publicMessages[code] || 'Não foi possível concluir esta etapa. Tente novamente.';
 }
+

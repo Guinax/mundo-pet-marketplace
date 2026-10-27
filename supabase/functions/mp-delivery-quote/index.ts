@@ -29,7 +29,7 @@ Deno.serve(async(req)=>{
   admin.from("mp_profiles").select("address").eq("user_id",user.id).maybeSingle()
  ]);
  if(storeError||profileError)return reply({error:"lookup_failed"},500);
- if(!store||store.is_demo||!store.is_open||!store.address?.trim())return reply({available:false,error:"store_unavailable"},409);
+ if(!store||store.is_demo||!store.address?.trim())return reply({available:false,error:"store_unavailable"},409);
  const a=profile?.address||{};
  if(!a.street||!a.number||!a.city||!a.state)return reply({error:"delivery_address_incomplete"},422);
  const destination=[a.street,a.number,a.district,a.city,a.state,"Brasil"].filter(Boolean).join(", ");
@@ -49,7 +49,8 @@ Deno.serve(async(req)=>{
   const raw=await resp.json();
   const meters=Number(raw?.routes?.[0]?.distanceMeters);
   if(!Number.isSafeInteger(meters)||meters<0)return reply({available:false,error:"route_unavailable"},422);
-  const cents=meters<=1500?500:meters<=3000?750:750+Math.ceil((meters-3000)*150/1000);
+  const cents=meters<=3000?500:500+Math.ceil((meters-3000)*150/1000);
   return reply({available:true,source:"google_routes",distance_m:meters,delivery_cents:cents,delivery_brl:cents/100,duration_seconds:parseInt(raw.routes[0].duration)||null});
  }catch{ return reply({available:false,error:"route_service_unreachable"},502); }
 });
+
