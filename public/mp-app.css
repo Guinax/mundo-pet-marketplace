@@ -17,3 +17,5 @@ body.mp-live{background:#edf0f5}.mp-shop{--mp-bg:#f8f9fc;--mp-green:#006b4d;--mp
 
 /* Keep checkout discoverable above the bottom navigation. */
 .mp-checkout-bar{position:fixed;bottom:calc(78px + env(safe-area-inset-bottom, 0px));left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:424px;box-sizing:border-box;padding:12px;background:#fff;border:1px solid #dce5df;border-radius:16px;box-shadow:0 -4px 22px #15362220;z-index:45}.mp-checkout-bar small{display:block;text-align:center;margin-top:6px;color:#4b6054;font-size:12px}.mp-checkout-spacer{min-height:104px}#mp-payment-actions,#mp-fulfillment-choice{scroll-margin-block:120px}@media(max-width:360px){#mp-payment-actions{flex-direction:column}}
+
+.mp-pickup-map{display:grid;gap:10px;margin:12px 0}.mp-pickup-map iframe{display:block;border:1px solid #dce5df;border-radius:12px;min-width:0;max-width:100%;background:#eef4f0}
