@@ -26,7 +26,7 @@ async function updateDeliveryQuote(){
  setEnabled(false);
  const mode=state.fulfillmentMode,items=cart();
  const eligible=fulfillmentEligibility(mode,items,state.products,state.stores,state.profile?.address||{});
- if(!state.user){message('Entre na sua conta e escolha entrega ou retirada.');return;}
+ if(!state.user&&mode==='delivery'){message('Entre na sua conta e complete o endereço para receber em casa.');return;}
  if(eligible.error){message(eligible.error);if(grand)grand.textContent='Aguardando dados';return;}
  if(value)value.textContent=mode==='pickup'?'Sem frete':'Calculando…';
  if(grand)grand.textContent='Consultando disponibilidade';
