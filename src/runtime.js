@@ -17,13 +17,11 @@ let deliveryQuote=null;let deliveryQuoteKey='';let deliverySeq=0;
 function deliveryFingerprint(){const items=cart();const a=state.profile?.address||{};return JSON.stringify({uid:state.user?.id||'',items,address:a,mode:state.fulfillmentMode});}
 async function updateDeliveryQuote(){
  if(page!=='cart')return;
- const status=document.getElementById('mp-delivery-quote-result'),value=document.getElementById('mp-shipping-value'),grand=document.getElementById('mp-grand-total'),actions=document.getElementById('mp-payment-actions'),paymentState=document.getElementById('mp-payment-state'),windowEl=document.getElementById('mp-service-window');
+ const status=document.getElementById('mp-delivery-quote-result'),value=document.getElementById('mp-shipping-value'),grand=document.getElementById('mp-grand-total'),windowEl=document.getElementById('mp-service-window');
  if(!status)return;
  const key=deliveryFingerprint(),seq=++deliverySeq;deliveryQuote=null;deliveryQuoteKey='';
  const retry=document.getElementById('mp-retry-shipping');if(retry)retry.hidden=true;
- const setEnabled=enabled=>actions?.querySelectorAll('button').forEach(b=>b.disabled=!enabled);
- const message=text=>{status.textContent=text;if(paymentState)paymentState.textContent=text;};
- setEnabled(false);
+ const message=text=>{status.textContent=text;};
  const mode=state.fulfillmentMode,items=cart();
  const eligible=fulfillmentEligibility(mode,items,state.products,state.stores,state.profile?.address||{});
  if(!state.user&&mode==='delivery'){message('Entre na sua conta e complete o endereço para receber em casa.');return;}
@@ -47,7 +45,7 @@ async function updateDeliveryQuote(){
   const subtotal=items.reduce((sum,i)=>sum+(state.products.find(p=>p.id===i.product_id)?.price_cents||0)*i.quantity,0);
   if(value)value.textContent=mode==='pickup'?'Grátis — retirada':money(data.delivery_cents);
   if(grand)grand.textContent=money(subtotal+data.delivery_cents);
-  message(mode==='pickup'?'Retirada selecionada, sem frete. Escolha Pix ou cartão.':'Entrega selecionada e frete calculado. Escolha Pix ou cartão.');setEnabled(true);
+  message(mode==='pickup'?'Retirada selecionada, sem frete. Continue para o pagamento.':'Entrega selecionada e frete calculado. Continue para o pagamento.');
  }catch(err){if(seq!==deliverySeq)return;message(err?.message||'Não foi possível confirmar a modalidade. Tente novamente.');if(grand)grand.textContent='Aguardando confirmação';if(retry)retry.hidden=false;}
 }
 
@@ -292,8 +290,8 @@ const actions={
   if(state.fulfillmentMode==='delivery'&&(!a?.street||!a.number||!a.city||!a.state))throw Error('Complete o endereço no perfil.');
   if(!items.length)throw Error('Seu carrinho está vazio.');
   if(!deliveryQuote||deliveryQuoteKey!==deliveryFingerprint())throw Error('Aguarde a confirmação da modalidade antes de pagar.');
-  const method=el.dataset.method;
-  if(!['infinitepay_pix','infinitepay_card'].includes(method))throw Error('Selecione Pix ou cartão.');
+  // Keep the legacy database provider marker; the InfinitePay link offers both methods.
+  const method='infinitepay_pix';
   const {data,error}=await withDeadline(()=>db.functions.invoke('mp-secure-checkout',{body:{cart:items,request_id:orderRequestKey(),payment_method:method,fulfillment_method:state.fulfillmentMode}}),40000);
   if(error||!data?.url){
    const info=await paymentInfo(data,error);
@@ -325,16 +323,15 @@ const actions={
  'toggle-product':async el=>{if(!state.roles.includes('admin'))throw new Error('Ativação depende da aprovação do administrador.');await result(db.from('mp_products').update({active:el.dataset.active==='true',...(el.dataset.active==='true'?{approval_status:'approved'}:{})}).eq('id',el.dataset.id).select('id').single());await refresh();toast('Produto atualizado.');},
  'share-courier-location':()=>shareCourierLocation(),
  'toggle-online':async()=>{if(!state.profile){await result(db.from('mp_profiles').insert({user_id:state.user.id,full_name:state.user.email,online:true,presence_updated_at:new Date().toISOString()}));}else await result(db.from('mp_profiles').update({online:!state.profile.online,presence_updated_at:new Date().toISOString()}).eq('user_id',state.user.id));await refresh();if(!state.profile?.online&&locationWatch!==null){navigator.geolocation.clearWatch(locationWatch);locationWatch=null;}},
- 'continue-checkout':async()=>{
+ 'continue-checkout':async el=>{
   if(!cart().length)return;
   if(!validFulfillment(state.fulfillmentMode)){
    const choice=document.getElementById('mp-fulfillment-choice');choice?.scrollIntoView({block:'center',behavior:'smooth'});choice?.querySelector('button')?.focus({preventScroll:true});toast('Escolha receber em casa ou retirar na loja.');return;
   }
   if(!state.user&&state.fulfillmentMode==='delivery'){requireLogin();return;}
   if(!deliveryQuote?.available||deliveryQuoteKey!==deliveryFingerprint())await updateDeliveryQuote();
-  const payment=document.getElementById('mp-payment-actions');payment?.scrollIntoView({block:'center',behavior:'smooth'});
-  if(deliveryQuote?.available&&deliveryQuoteKey===deliveryFingerprint())payment?.querySelector('button:not(:disabled)')?.focus({preventScroll:true});
-  else toast(document.getElementById('mp-payment-state')?.textContent||'Confira os dados do pedido para continuar.',true);
+  if(deliveryQuote?.available&&deliveryQuoteKey===deliveryFingerprint())await actions.checkout(el);
+  else {document.getElementById('mp-delivery-quote-result')?.scrollIntoView({block:'center',behavior:'smooth'});toast(document.getElementById('mp-delivery-quote-result')?.textContent||'Confira os dados do pedido para continuar.',true);}
  },
  'choose-fulfillment':async el=>{if(!validFulfillment(el.dataset.mode))return;state.fulfillmentMode=el.dataset.mode;localStorage.removeItem('mundopet.order-request');await render();},
  'pickup-complete':el=>modal('Confirmar retirada',`<form class="mp-stack mp-delivery-form" data-id="${esc(el.dataset.id)}">${field('code','Código do cliente (6 dígitos)','','text','required pattern="[0-9]{6}" inputmode="numeric" maxlength="6"')}<p>Confirme somente após entregar os produtos ao cliente.</p><button class="mp-btn" type="submit">Validar código e concluir retirada</button></form>`),
