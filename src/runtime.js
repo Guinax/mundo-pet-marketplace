@@ -325,6 +325,17 @@ const actions={
  'toggle-product':async el=>{if(!state.roles.includes('admin'))throw new Error('Ativação depende da aprovação do administrador.');await result(db.from('mp_products').update({active:el.dataset.active==='true',...(el.dataset.active==='true'?{approval_status:'approved'}:{})}).eq('id',el.dataset.id).select('id').single());await refresh();toast('Produto atualizado.');},
  'share-courier-location':()=>shareCourierLocation(),
  'toggle-online':async()=>{if(!state.profile){await result(db.from('mp_profiles').insert({user_id:state.user.id,full_name:state.user.email,online:true,presence_updated_at:new Date().toISOString()}));}else await result(db.from('mp_profiles').update({online:!state.profile.online,presence_updated_at:new Date().toISOString()}).eq('user_id',state.user.id));await refresh();if(!state.profile?.online&&locationWatch!==null){navigator.geolocation.clearWatch(locationWatch);locationWatch=null;}},
+ 'continue-checkout':async()=>{
+  if(!cart().length)return;
+  if(!validFulfillment(state.fulfillmentMode)){
+   const choice=document.getElementById('mp-fulfillment-choice');choice?.scrollIntoView({block:'center',behavior:'smooth'});choice?.querySelector('button')?.focus({preventScroll:true});toast('Escolha receber em casa ou retirar na loja.');return;
+  }
+  if(!state.user&&state.fulfillmentMode==='delivery'){requireLogin();return;}
+  if(!deliveryQuote?.available||deliveryQuoteKey!==deliveryFingerprint())await updateDeliveryQuote();
+  const payment=document.getElementById('mp-payment-actions');payment?.scrollIntoView({block:'center',behavior:'smooth'});
+  if(deliveryQuote?.available&&deliveryQuoteKey===deliveryFingerprint())payment?.querySelector('button:not(:disabled)')?.focus({preventScroll:true});
+  else toast(document.getElementById('mp-payment-state')?.textContent||'Confira os dados do pedido para continuar.',true);
+ },
  'choose-fulfillment':async el=>{if(!validFulfillment(el.dataset.mode))return;state.fulfillmentMode=el.dataset.mode;localStorage.removeItem('mundopet.order-request');await render();},
  'pickup-complete':el=>modal('Confirmar retirada',`<form class="mp-stack mp-delivery-form" data-id="${esc(el.dataset.id)}">${field('code','Código do cliente (6 dígitos)','','text','required pattern="[0-9]{6}" inputmode="numeric" maxlength="6"')}<p>Confirme somente após entregar os produtos ao cliente.</p><button class="mp-btn" type="submit">Validar código e concluir retirada</button></form>`),
  'retry-shipping':async()=>{await updateDeliveryQuote();},

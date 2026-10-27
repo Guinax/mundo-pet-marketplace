@@ -1,5 +1,5 @@
 /* Mundo Pet PWA: cache only static shell and assets, never checkout or API responses. */
-const CACHE_NAME = "mundo-pet-pwa-v2";
+const CACHE_NAME = "mundo-pet-pwa-v3";
 const SHELL = ["/", "/stitch-home.html", "/mp-app.css", "/icons/mundo-pet-192.png", "/icons/mundo-pet-512.png"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
