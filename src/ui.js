@@ -63,5 +63,5 @@ export function pickupLocationMap(name,address) {
  const location=typeof address==='string'?address.trim():'';
  if(!location)return '';
  const destination=encodeURIComponent(location);
- return `<div class="mp-pickup-map"><iframe title="Localização da loja de retirada: ${esc(name||'Loja')}" src="https://maps.google.com/maps?q=${destination}&z=16&output=embed&hl=pt-BR" width="100%" height="240" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><a class="mp-btn outline mp-full" href="https://www.google.com/maps/dir/?api=1&destination=${destination}" target="_blank" rel="noopener noreferrer">${icon('directions')} Ver rota até a loja</a></div>`;
+ return `<div class="mp-pickup-map"><iframe title="Localização da loja de retirada: ${esc(name||'Loja')}" src="https://maps.google.com/maps?q=${destination}&z=16&t=k&output=embed&hl=pt-BR" width="100%" height="240" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><a class="mp-btn outline mp-full" href="https://www.google.com/maps/dir/?api=1&destination=${destination}" target="_blank" rel="noopener noreferrer">${icon('directions')} Ver rota até a loja</a></div>`;
 }
