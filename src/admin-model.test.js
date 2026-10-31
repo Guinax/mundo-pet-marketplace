@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {campaignLink,isPublishedCampaign,percentBps,moneyCents,filterOrders,financeTotals,buildNotifications,csvRows} from './admin-model.js';
+import {campaignLink,isPublishedCampaign,percentBps,moneyCents,filterOrders,canArchiveOrder,financeTotals,buildNotifications,csvRows} from './admin-model.js';
 import {adminConsoleView} from './admin-console-view.js';
 const now=Date.parse('2026-10-26T15:00:00Z');
 const base={applications:[],orders:[],appointments:[],products:[],services:[],campaigns:[],wallets:[],entries:[],settlements:[],payouts:[],reads:[],directory:[],audit:[],stores:[],policy:{products_bps:1000,services_bps:1000},now:new Date(now)};
@@ -37,4 +37,19 @@ test('every live admin section renders with working action attributes and safe t
 });
 test('CSV export quotes formula-like user content and embedded separators',()=>{
  const csv=csvRows([['=HYPERLINK("bad")','a;b']]);assert.ok(csv.includes("'="));assert.ok(csv.includes('"a;b"'));
+});
+
+test('only unpaid pending or canceled orders may be archived individually',()=>{
+ const eligible={id:'00000000-0000-0000-0000-000000000001',status:'pending',payment_status:'unpaid',payment_nsu:null,admin_archived_at:null};
+ assert.equal(canArchiveOrder(eligible),true);
+ assert.equal(canArchiveOrder({...eligible,status:'canceled'}),true);
+ for(const change of [{payment_status:'paid'},{status:'preparing'},{status:'delivered'},{admin_archived_at:'2026-10-31T10:00:00Z'},{payment_nsu:'transacao123'},{payment_details:{paid:true}}]){
+   assert.equal(canArchiveOrder({...eligible,...change}),false);
+ }
+ const active=adminConsoleView({...base,orders:[{...eligible,total_cents:1000,created_at:'2026-10-31T10:00:00Z',mp_order_items:[]}]},'orders',{});
+ assert.match(active,/admin-order-archive/);
+ assert.match(active,/Excluir do histórico/);
+ const archived=adminConsoleView({...base,archivedOrders:[{...eligible,admin_archived_at:'2026-10-31T12:00:00Z',total_cents:1000,created_at:'2026-10-31T10:00:00Z',mp_order_items:[]}]},'archived',{});
+ assert.match(archived,/admin-order-restore/);
+ assert.match(archived,/Restaurar/);
 });
