@@ -7,6 +7,7 @@ export function campaignLink(value) {
 }
 export function percentBps(value){const n=Number(value);if(!Number.isFinite(n)||n<0||n>100||Math.abs(n*100-Math.round(n*100))>1e-6)throw Error('Informe uma taxa de 0 a 100%, com até duas casas decimais.');return Math.round(n*100);}
 export function moneyCents(value){const n=Number(value);if(!Number.isFinite(n)||n<=0||!Number.isSafeInteger(Math.round(n*100))||Math.abs(n*100-Math.round(n*100))>1e-6)throw Error('Informe um valor positivo, com até duas casas decimais.');return Math.round(n*100);}
+export const canArchiveOrder = o => Boolean(o && !o.admin_archived_at && o.payment_status==='unpaid' && ['pending','canceled'].includes(o.status) && !o.payment_nsu && !o.payment_details?.paid);
 export function filterOrders(orders,{q='',status='',store='',courier='',from='',to='',history=false}={}){
  const needle=q.trim().toLocaleLowerCase('pt-BR');
  return orders.filter(o=>!o.is_demo&&(!history||['delivered','canceled'].includes(o.status))&&(!status||o.status===status)&&(!store||o.store_id===store)&&(!courier||o.courier_id===courier)&&(!needle||[o.id,...(o.mp_order_items||[]).map(i=>i.name)].join(' ').toLocaleLowerCase('pt-BR').includes(needle))&&(!from||Date.parse(o.created_at)>=Date.parse(from+'T00:00:00-03:00'))&&(!to||Date.parse(o.created_at)<=Date.parse(to+'T23:59:59.999-03:00')));
