@@ -1,3 +1,4 @@
+import { adminAlertsEnabled, enableAdminAlerts, disableAdminAlerts } from './admin-alerts.js';
 import { db,result,state,loadPublic,loadUser,can,money,dateTime,statusText,cart,saveCart,orderRequestKey,toggleFavorite,validCPF,formObject } from './data.js';
 import { esc,icon,btn,route,field,select,textarea,card,badge,empty,shell,modal,closeModal,toast } from './ui.js';
 import { home,updateCatalog,tutor,booking,checkout,storePage,vetPage,courierPage,adminPage,petEditor } from './pages.js';
@@ -69,6 +70,16 @@ async function orderStatus(id,status,code='') {
  await refresh();toast('Pedido atualizado: '+statusText(status));
 }
 const actions={
+ 'toggle-admin-alerts': async()=>{
+  if(!can('admin')||!state.user)throw new Error('Acesso exclusivo da administração.');
+  if(adminAlertsEnabled(state.user.id)){
+   disableAdminAlerts(state.user.id);
+   await render();toast('Sininho desativado neste dispositivo.');
+  }else{
+   await enableAdminAlerts(state.user.id);
+   await render();toast('Preferência salva. O envio automático ainda precisa de configuração no servidor.');
+  }
+ },
  home:()=>{location.href=route.home;},account:accountModal,login:()=>authModal(),signup:()=>authModal('signup'),'close-modal':closeModal,
  logout:async()=>{await result(db.auth.signOut());state.user=null;await loadUser();closeModal();await render();toast('Você saiu da conta.');},
  refresh:async()=>{await refresh();toast('Dados atualizados.');},
