@@ -73,11 +73,11 @@ const actions={
  'toggle-admin-alerts': async()=>{
   if(!can('admin')||!state.user)throw new Error('Acesso exclusivo da administração.');
   if(adminAlertsEnabled(state.user.id)){
-   disableAdminAlerts(state.user.id);
+   await disableAdminAlerts(state.user.id);
    await render();toast('Sininho desativado neste dispositivo.');
   }else{
    await enableAdminAlerts(state.user.id);
-   await render();toast('Preferência salva. O envio automático ainda precisa de configuração no servidor.');
+   await render();toast('Sininho ativado. Notificações push autorizadas neste dispositivo.');
   }
  },
  home:()=>{location.href=route.home;},account:accountModal,login:()=>authModal(),signup:()=>authModal('signup'),'close-modal':closeModal,
