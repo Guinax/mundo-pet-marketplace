@@ -19,6 +19,14 @@ test('catalog excludes unavailable listings, orders prices and respects favorite
  assert.deepEqual(selectProducts(products,{favorites:[]}),[]);
  assert.equal(products[0].id,'a');
 });
+test('Pet Shop gathers all product categories while each header category stays specific',()=>{
+ const catalog=[...products,{id:'snack',name:'Petisco para gatos',category:'Petiscos',price_cents:1500,stock:10}];
+ assert.deepEqual(selectProducts(catalog,{category:'Pet Shops'}).map(p=>p.id),['a','b','snack']);
+ assert.deepEqual(selectProducts(catalog,{category:'Rações'}).map(p=>p.id),['a']);
+ assert.deepEqual(selectProducts(catalog,{category:'Petiscos'}).map(p=>p.id),['snack']);
+ assert.deepEqual(selectProducts(catalog,{category:'Higiene'}).map(p=>p.id),['b']);
+ assert.deepEqual(selectProducts(catalog,{category:'Pet Shops',inStock:true}).map(p=>p.id),['a','snack']);
+});
 test('product details retain packaging precision, deduplicate safe gallery images and encode links',()=>{
  assert.equal(packagingLabel({volume_ml:'400.00'}),'400 mL');
  assert.equal(packagingLabel({weight_kg:2.5}),'2,5 kg');

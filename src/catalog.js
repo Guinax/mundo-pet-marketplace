@@ -7,10 +7,11 @@ export const sectorImages = {
   walkers: '/media/sectors/passeios-dog-walkers.jpg',
 };
 export const normalizeSearch = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+export const isPreorder = product => normalizeSearch(product.name).endsWith(' — sob encomenda') || normalizeSearch(product.description).startsWith('venda sob encomenda.');
 export function selectProducts(products, { category = '', search = '', brand = '', inStock = false, sort = 'relevance', maxPrice = 0, favorites = null } = {}) {
   const query = normalizeSearch(search);
   const selected = products.filter(p => p.active !== false && !['pending','rejected'].includes(p.approval_status)
-    && (!category || p.category === category)
+    && (!category || category === 'Pet Shops' || p.category === category)
     && (!brand || p.brand === brand)
     && (!inStock || p.stock > 0)
     && (!maxPrice || p.price_cents <= maxPrice)
