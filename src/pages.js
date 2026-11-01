@@ -1,3 +1,4 @@
+import { adminAlertsEnabled, adminAlertsPermission } from './admin-alerts.js';
 import {db,result,state,can,money,dateTime,statusText,cart,cartTotal,favorites} from './data.js';
 import {esc,icon,btn,field,select,textarea,card,badge,empty,demo,safeImage,productCard,serviceCard,orderCard,route} from './ui.js';
 
@@ -95,8 +96,11 @@ export async function adminPage() {
  const tab=new URLSearchParams(location.search).get('tab');
  if(tab==='finance')return finance(orders);
  const pending=applications.filter(a=>a.status==='pending');
+ const alertsOn=adminAlertsEnabled(state.user.id);
+ const alertStatus=adminAlertsPermission();
+ const notificationPanel=card('Avisos de vendas 🔔',`<p>Preferência neste aparelho: <strong>${alertsOn?'ativada':'desativada'}</strong>. Permissão do dispositivo: ${esc(alertStatus)}.</p><p class="mp-muted">A configuração fica salva ao fechar o aplicativo. O envio automático de vendas em segundo plano ainda depende da ativação do serviço push no servidor.</p>${btn(alertsOn?'Desativar sininho':'Ativar sininho','toggle-admin-alerts','outline')}`);
  const summary=`<div class="mp-banner"><strong>${icon('verified_user')} Administração Mundo Pet</strong><p class="mp-muted">${esc(state.user.email)} • Dados atualizados do banco</p></div><div class="mp-grid">${kpi('Vendas reais concluídas',money(orders.filter(o=>!o.is_demo&&o.status==='delivered').reduce((s,o)=>s+o.total_cents,0)),'payments')}${kpi('Credenciamentos',pending.length,'verified_user')}${kpi('Pedidos',orders.length,'receipt_long')}${kpi('Agendamentos',appointments.length,'calendar_month')}</div>`;
  const appList=card('Fila de credenciamento',applications.map(a=>`<article class="mp-card"><div class="mp-row mp-between"><h3>${esc(a.name)}</h3>${badge(statusText(a.status),a.status==='pending'?'warning':'')}</div><p>${{store:'Pet Shop',vet:'Veterinário',courier:'Entregador'}[a.role]} • ${esc(a.registration||'Documento não informado')}</p><p class="mp-muted">${esc(a.address)} ${esc(a.phone)}</p>${a.status==='pending'?`<div class="mp-grid" style="margin-top:12px">${btn('Recusar','review-application','danger',`data-id="${a.id}" data-approved="false"`)}${btn('Aprovar cadastro','review-application','',`data-id="${a.id}" data-approved="true"`)}</div>`:''}</article>`).join('')||empty('Nenhum credenciamento pendente'));
  const orderList=`<section><h2 class="mp-section-title">Monitoramento dos pedidos</h2><div class="mp-stack">${orders.map(storeOrder).join('')||empty('Nenhum pedido cadastrado')}</div></section>`;
- return tab==='applications'?appList:tab==='orders'?orderList:`${summary}${appList}${orderList}<section><h2 class="mp-section-title">Agendamentos</h2><div class="mp-stack">${appointmentsList(appointments,true)}</div></section>${finance(orders)}`;
+ return tab==='applications'?appList:tab==='orders'?orderList:`${summary}${notificationPanel}${appList}${orderList}<section><h2 class="mp-section-title">Agendamentos</h2><div class="mp-stack">${appointmentsList(appointments,true)}</div></section>${finance(orders)}`;
 }
