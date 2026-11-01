@@ -2,6 +2,7 @@ import {fulfillmentEligibility,validFulfillment,SERVICE_HOURS} from './fulfillme
 import {appShareActions} from './share-app.js';
 import {createAdminHandlers,adminOrderControls} from './admin-console.js';
 import {bindAdminFilters} from './admin-design.js';
+import { enableSalePush, disableSalePush, testSalePush, syncExistingSalePush } from './sale-push.js';
 import { approvedPaymentUrl, paymentActions, cartAfterPayment, paymentIssueMessage } from './payments.js';
 import { db,result,state,loadPublic,loadUser,can,money,dateTime,statusText,cart,saveCart,orderRequestKey,toggleFavorite,validCPF,formObject } from './data.js';
 import { esc,icon,btn,route,field,select,textarea,card,badge,empty,shell,modal,closeModal,toast,pickupLocationMap } from './ui.js';
@@ -123,7 +124,7 @@ function authModal(mode='login') {
 function newPasswordModal(){modal('Definir nova senha',`<form id="mp-new-password-form" class="mp-stack">${field('password','Nova senha','','password','required minlength="8" autocomplete="new-password"')}${field('confirm','Confirmar nova senha','','password','required minlength="8" autocomplete="new-password"')}<p class="mp-error" role="alert"></p><button type="submit" class="mp-btn mp-full">Salvar nova senha</button></form>`);}
 function accountModal() {
  if(!state.user){authModal();return;}
- modal('Minha conta',`<p>${esc(state.profile?.full_name||state.user.email)}</p><p class="mp-muted">${esc(state.user.email)}</p><div class="mp-stack" style="margin-top:18px">${state.roles.includes('admin')&&state.user.email?.toLowerCase()==='wap33000@gmail.com'?`<a class="mp-btn" href="${route.admin}">Painel Admin</a>`:''}<a class="mp-btn" href="${route.tutor}">Meus dados e pets</a><a class="mp-btn outline" href="${route.cart}?orders=1">Meus pedidos</a><a class="mp-btn outline" href="${route.booking}">Meus agendamentos</a>${btn('Solicitar acesso profissional','apply','outline')}${btn('Sair da conta','logout','danger')}</div>`);
+ modal('Minha conta',`<p>${esc(state.profile?.full_name||state.user.email)}</p><p class="mp-muted">${esc(state.user.email)}</p><div class="mp-stack" style="margin-top:18px">${state.roles.includes('admin')&&state.user.email?.toLowerCase()==='wap33000@gmail.com'?`<a class="mp-btn" href="${route.admin}">Painel Admin</a>`:''}<a class="mp-btn" href="${route.tutor}">Meus dados e pets</a><a class="mp-btn outline" href="${route.cart}?orders=1">Meus pedidos</a><a class="mp-btn outline" href="${route.booking}">Meus agendamentos</a>${btn('Solicitar acesso profissional','apply','outline')}${state.roles.some(r=>r==='admin'||r==='store')?btn('🔔 Ativar avisos de vendas','enable-sale-push','outline mp-full'):''}${btn('Sair da conta','logout','danger')}</div>`);
 }
 async function applicationModal(role='store') {
  if(!requireLogin())return;
@@ -261,7 +262,10 @@ const actions={
  'lookup-product-code':el=>lookupProductBarcode(document.getElementById('mp-product-form')?.elements.namedItem('ean')?.value),
  'stop-product-scan':stopProductScan,
  home:()=>{location.href=route.home;},account:accountModal,login:()=>authModal(),signup:()=>authModal('signup'),recover:()=>authModal('recover'),'close-modal':closeModal,
- logout:async()=>{await result(db.auth.signOut());state.user=null;await loadUser();closeModal();await render();toast('Você saiu da conta.');},
+ 'enable-sale-push':async()=>{await enableSalePush();toast('🔔 Avisos de vendas ativados neste celular.');},
+ 'disable-sale-push':async()=>{await disableSalePush();toast('Avisos de vendas desativados neste celular.');},
+ 'test-sale-push':async()=>{await testSalePush();toast('Aviso de teste enviado para a barra do Android.');},
+ logout:async()=>{try{await disableSalePush();}catch(error){console.warn('Push logout',error);}await result(db.auth.signOut());state.user=null;await loadUser();closeModal();await render();toast('Você saiu da conta.');},
  refresh:async()=>{await refresh();toast('Dados atualizados.');},
  apply:el=>applicationModal(el.dataset.role||'store'),
  'edit-address':()=>{if(requireLogin())location.href=route.tutor;},
@@ -454,6 +458,7 @@ async function init(){
  await render();
  const {data:{session},error}=await withDeadline(()=>db.auth.getSession());if(error)throw error;state.user=session?.user||null;
  await withDeadline(()=>Promise.all([loadPublic(),loadUser()]));await render();
+ if(state.user&&(state.roles.includes('admin')||state.roles.includes('store')))void syncExistingSalePush().catch(error=>console.warn('Push sync',error));
  const authParams=new URLSearchParams(location.search);
  if(authParams.has('recovery')&&state.user)newPasswordModal();
  else if(authParams.has('login')){if(!state.user)authModal();else toast('E-mail confirmado. Sua conta está conectada.');}
