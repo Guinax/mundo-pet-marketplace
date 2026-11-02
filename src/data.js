@@ -11,11 +11,20 @@ export const catalogDb = createClient(config.url, config.key, {
 export const state = { user: null, profile: null, roles: [], pets: [], products: [], services: [], stores: [], orders: [], appointments: [] };
 export async function result(query) { const { data, error } = await query; if (error) throw error; return data; }
 export async function loadPublic() {
-  [state.products, state.services, state.stores] = await Promise.all([
-    result(catalogDb.from('mp_products').select('*').eq('active', true).eq('approval_status', 'approved').order('created_at')),
-    result(catalogDb.from('mp_services').select('*').eq('active', true).order('name')),
-    result(catalogDb.from('mp_stores').select('*').order('name')),
-  ]);
+  // The catalog must survive an unrelated store or service request failure.
+  const requests = [
+    result(catalogDb.from('mp_products').select('*').eq('active', true).eq('approval_status', 'approved').order('created_at'))
+      .then(products => { state.products = products; }),
+    result(catalogDb.from('mp_services').select('*').eq('active', true).order('name'))
+      .then(services => { state.services = services; }),
+    result(catalogDb.from('mp_stores').select('*').order('name'))
+      .then(stores => { state.stores = stores; }),
+  ];
+  const outcomes = await Promise.allSettled(requests);
+  if (outcomes[0].status === 'rejected') throw outcomes[0].reason;
+  for (let i = 1; i < outcomes.length; i++) {
+    if (outcomes[i].status === 'rejected') console.warn('Mundo Pet: dados auxiliares indisponíveis', outcomes[i].reason);
+  }
 }
 export async function loadUser() {
   if (!state.user) { state.profile=null; state.roles=[]; state.pets=[]; state.orders=[]; state.appointments=[]; return; }
