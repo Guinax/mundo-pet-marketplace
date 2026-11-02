@@ -190,7 +190,26 @@ db.auth.onAuthStateChange((event,session)=>{
  if(event==='SIGNED_OUT'){state.user=null;setTimeout(()=>{loadUser().then(render);},0);}
  if(event==='SIGNED_IN'&&!state.user&&!openingAccount){state.user=session?.user||null;setTimeout(()=>{loadUser().then(render);},0);}
 });
-init().catch(error=>{shell(page,`<div class="mp-runtime-error"><strong>Falha ao conectar ao Mundo Pet</strong><p>${esc(friendly(error))}</p>${btn('Tentar novamente','refresh')}</div>`);});
+init().catch(error=>{
+ // The public storefront should remain visible if authentication or API calls time out.
+ if(page==='home'){
+  console.warn('Mundo Pet: inicialização incompleta', error);
+  const banner=document.createElement('div');
+  banner.className='mp-runtime-error';
+  banner.setAttribute('role','status');
+  banner.style.cssText='position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;padding:12px;background:#fff6df;color:#513b00;border:1px solid #e4bd60;border-radius:12px;box-shadow:0 2px 12px #0002';
+  banner.innerHTML='<strong>Conexão instável.</strong> Alguns produtos podem não aparecer. <button type="button" id="mp-retry-connect">Tentar novamente</button>';
+  document.querySelector('#mp-connection-banner')?.remove();
+  banner.id='mp-connection-banner';
+  document.body.appendChild(banner);
+  banner.querySelector('button').addEventListener('click',()=>{
+   banner.remove();
+   init().catch(e=>console.warn('Mundo Pet: nova tentativa falhou',e));
+  },{once:true});
+  return;
+ }
+ shell(page,`<div class="mp-runtime-error"><strong>Falha ao conectar ao Mundo Pet</strong><p>${esc(friendly(error))}</p>${btn('Tentar novamente','refresh')}</div>`);
+});
 // Poll operational pages without replacing a form or interrupting ongoing typing.
 if(['store','vet','courier','admin'].includes(page))setInterval(()=>{
  if(!state.user||document.hidden||document.querySelector('[role="dialog"]')||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;
