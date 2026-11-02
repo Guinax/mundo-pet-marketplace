@@ -1,4 +1,4 @@
-export const APP_URL = 'https://mundo-pet-marketplace.vercel.app/';
+export const APP_URL = 'https://mundo-pet-marketplace.vercel.app/mundo_pet_tela_principal/';
 export const LOGO_URL = '/media/brand/mundo-pet-logo.png';
 export const APP_SHARE = Object.freeze({title:'Mundo Pet',text:'Conheça o Mundo Pet! Produtos, serviços e cuidados para o seu melhor amigo, em um só lugar.',url:APP_URL});
 export const brandImage = (className='mp-brand-logo') => `<img class="${className}" src="${LOGO_URL}" alt="Mundo Pet" width="2172" height="724" decoding="async">`;
