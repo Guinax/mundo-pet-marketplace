@@ -1,3 +1,4 @@
+import { adminAlertsEnabled, enableAdminAlerts, disableAdminAlerts } from './admin-alerts.js';
 import { db,result,state,loadPublic,loadUser,can,money,dateTime,statusText,cart,saveCart,orderRequestKey,toggleFavorite,validCPF,formObject } from './data.js';
 import { esc,icon,btn,route,field,select,textarea,card,badge,empty,shell,modal,closeModal,toast } from './ui.js';
 import { home,updateCatalog,tutor,booking,checkout,storePage,vetPage,courierPage,adminPage,petEditor } from './pages.js';
@@ -69,6 +70,16 @@ async function orderStatus(id,status,code='') {
  await refresh();toast('Pedido atualizado: '+statusText(status));
 }
 const actions={
+ 'toggle-admin-alerts': async()=>{
+  if(!can('admin')||!state.user)throw new Error('Acesso exclusivo da administração.');
+  if(adminAlertsEnabled(state.user.id)){
+   await disableAdminAlerts(state.user.id);
+   await render();toast('Sininho desativado neste dispositivo.');
+  }else{
+   await enableAdminAlerts(state.user.id);
+   await render();toast('Sininho ativado. Notificações push autorizadas neste dispositivo.');
+  }
+ },
  home:()=>{location.href=route.home;},account:accountModal,login:()=>authModal(),signup:()=>authModal('signup'),'close-modal':closeModal,
  logout:async()=>{await result(db.auth.signOut());state.user=null;await loadUser();closeModal();await render();toast('Você saiu da conta.');},
  refresh:async()=>{await refresh();toast('Dados atualizados.');},
@@ -157,16 +168,63 @@ document.addEventListener('change',event=>{
 });
 
 shell(page,`<div class="mp-empty" role="status">Carregando Mundo Pet…</div>`);
+// Prevent an unresponsive network request from blocking the application indefinitely.
+function startupTimeout(promise, ms, message) {
+ let timer;
+ return Promise.race([
+  promise,
+  new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), ms); })
+ ]).finally(() => clearTimeout(timer));
+}
 async function init(){
- const {data:{session},error}=await db.auth.getSession();if(error)throw error;state.user=session?.user||null;
- await Promise.all([loadPublic(),loadUser()]);await render();
+ if(page==='home'){
+  // Show the storefront and fetch its public catalog without waiting for Auth.
+  await render();
+  await startupTimeout(loadPublic(), 15000, 'O catálogo demorou para responder. Tente novamente.');
+  document.getElementById('mp-connection-banner')?.remove();
+  await render();
+  // An expired session must not hide publicly available products.
+  try {
+   const {data:{session},error}=await startupTimeout(db.auth.getSession(), 8000, 'A autenticação demorou.');
+   if(error)throw error;
+   state.user=session?.user||null;
+   await startupTimeout(loadUser(), 10000, 'Os dados da conta demoraram.');
+   await render();
+  }catch(error){console.warn('Mundo Pet: sessão não carregada, catálogo público preservado',error);}
+  return;
+ }
+ const {data:{session},error}=await startupTimeout(db.auth.getSession(), 10000, 'Tempo esgotado ao conectar. Tente novamente.');
+ if(error)throw error;
+ state.user=session?.user||null;
+ await startupTimeout(Promise.all([loadPublic(),loadUser()]), 15000, 'O servidor demorou para responder. Tente novamente.');
+ await render();
 }
 db.auth.onAuthStateChange((event,session)=>{
  if(event==='TOKEN_REFRESHED')state.user=session?.user||null;
  if(event==='SIGNED_OUT'){state.user=null;setTimeout(()=>{loadUser().then(render);},0);}
  if(event==='SIGNED_IN'&&!state.user&&!openingAccount){state.user=session?.user||null;setTimeout(()=>{loadUser().then(render);},0);}
 });
-init().catch(error=>{shell(page,`<div class="mp-runtime-error"><strong>Falha ao conectar ao Mundo Pet</strong><p>${esc(friendly(error))}</p>${btn('Tentar novamente','refresh')}</div>`);});
+function reportStartupError(error){
+ // The public storefront should remain visible if authentication or API calls time out.
+ if(page==='home'){
+  console.warn('Mundo Pet: inicialização incompleta', error);
+  const banner=document.createElement('div');
+  banner.className='mp-runtime-error';
+  banner.setAttribute('role','status');
+  banner.style.cssText='position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;padding:12px;background:#fff6df;color:#513b00;border:1px solid #e4bd60;border-radius:12px;box-shadow:0 2px 12px #0002';
+  banner.innerHTML='<strong>Conexão instável.</strong> Alguns produtos podem não aparecer. <button type="button" id="mp-retry-connect">Tentar novamente</button>';
+  document.querySelector('#mp-connection-banner')?.remove();
+  banner.id='mp-connection-banner';
+  document.body.appendChild(banner);
+  banner.querySelector('button').addEventListener('click',()=>{
+   banner.remove();
+   init().catch(reportStartupError);
+  },{once:true});
+  return;
+ }
+ shell(page,`<div class="mp-runtime-error"><strong>Falha ao conectar ao Mundo Pet</strong><p>${esc(friendly(error))}</p>${btn('Tentar novamente','refresh')}</div>`);
+}
+init().catch(reportStartupError);
 // Poll operational pages without replacing a form or interrupting ongoing typing.
 if(['store','vet','courier','admin'].includes(page))setInterval(()=>{
  if(!state.user||document.hidden||document.querySelector('[role="dialog"]')||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;
