@@ -16,7 +16,7 @@ export async function adminConsolePage(){
  ]);
  const archivedOrders=orders.filter(o=>o.admin_archived_at&&o.payment_status!=='paid').sort((a,b)=>Date.parse(b.admin_archived_at)-Date.parse(a.admin_archived_at));
   const visibleOrders=orders.filter(o=>!o.admin_archived_at||o.payment_status==='paid');
-  current={applications,orders:visibleOrders,archivedOrders,appointments,entries,policy,wallets,settlements,payouts,campaigns,reads,directory,services,products,audit,stores:state.stores,now:new Date()};
+  current={userId:state.user.id,applications,orders:visibleOrders,archivedOrders,appointments,entries,policy,wallets,settlements,payouts,campaigns,reads,directory,services,products,audit,stores:state.stores,now:new Date()};
  state.adminPending=buildNotifications(current).filter(n=>!n.read).length;
  return adminConsoleView(current,new URLSearchParams(location.search).get('tab')||'',Object.fromEntries(new URLSearchParams(location.search)));
 }
