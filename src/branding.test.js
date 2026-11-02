@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {APP_URL,APP_SHARE,shareTargets,nativeAppShare,copyAppLink} from './branding.js';
 test('all social targets share the public app URL without account, admin or recovery information',()=>{
  const targets=shareTargets();
- assert.equal(APP_URL,'https://mundo-pet-marketplace.vercel.app/');
+ assert.equal(APP_URL,'https://mundo-pet-marketplace.vercel.app/mundo_pet_tela_principal/');
  assert.equal(new URL(targets.facebook).searchParams.get('u'),APP_URL);
  assert.equal(new URL(targets.x).searchParams.get('url'),APP_URL);
  assert.equal(new URL(targets.whatsapp).searchParams.get('text'),APP_SHARE.text+'\n'+APP_URL);
