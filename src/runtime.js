@@ -168,9 +168,22 @@ document.addEventListener('change',event=>{
 });
 
 shell(page,`<div class="mp-empty" role="status">Carregando Mundo Pet…</div>`);
+// Prevent an unresponsive network request from blocking the application indefinitely.
+function startupTimeout(promise, ms, message) {
+ let timer;
+ return Promise.race([
+  promise,
+  new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), ms); })
+ ]).finally(() => clearTimeout(timer));
+}
 async function init(){
- const {data:{session},error}=await db.auth.getSession();if(error)throw error;state.user=session?.user||null;
- await Promise.all([loadPublic(),loadUser()]);await render();
+ // The public home must be usable even before the database answers.
+ if(page==='home') await render();
+ const {data:{session},error}=await startupTimeout(db.auth.getSession(), 10000, 'Tempo esgotado ao conectar. Tente novamente.');
+ if(error)throw error;
+ state.user=session?.user||null;
+ await startupTimeout(Promise.all([loadPublic(),loadUser()]), 12000, 'O servidor demorou para responder. Tente novamente.');
+ await render();
 }
 db.auth.onAuthStateChange((event,session)=>{
  if(event==='TOKEN_REFRESHED')state.user=session?.user||null;
