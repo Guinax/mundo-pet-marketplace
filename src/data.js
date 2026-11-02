@@ -2,15 +2,19 @@ import { createClient } from '@supabase/supabase-js';
 import config from './config.json' with { type: 'json' };
 
 export const db = createClient(config.url, config.key, {
-  auth: { storageKey: 'mundopet.auth.v1', detectSessionInUrl: true, persistSession: true },
+  auth: { storageKey: 'mundopet.auth.v2', detectSessionInUrl: true, persistSession: true },
+});
+// Public catalog queries must not wait on an old or expired login session.
+export const catalogDb = createClient(config.url, config.key, {
+  auth: { storageKey: 'mundopet.catalog.v1', persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 });
 export const state = { user: null, profile: null, roles: [], pets: [], products: [], services: [], stores: [], orders: [], appointments: [] };
 export async function result(query) { const { data, error } = await query; if (error) throw error; return data; }
 export async function loadPublic() {
   [state.products, state.services, state.stores] = await Promise.all([
-    result(db.from('mp_products').select('*').eq('active', true).order('created_at')),
-    result(db.from('mp_services').select('*').eq('active', true).order('name')),
-    result(db.from('mp_stores').select('*').order('name')),
+    result(catalogDb.from('mp_products').select('*').eq('active', true).eq('approval_status', 'approved').order('created_at')),
+    result(catalogDb.from('mp_services').select('*').eq('active', true).order('name')),
+    result(catalogDb.from('mp_stores').select('*').order('name')),
   ]);
 }
 export async function loadUser() {
