@@ -1,3 +1,4 @@
+import {adminAlertsEnabled,enableAdminAlerts,disableAdminAlerts} from './admin-alerts.js';
 import {fulfillmentEligibility,validFulfillment,SERVICE_HOURS} from './fulfillment.js';
 import {appShareActions} from './share-app.js';
 import {createAdminHandlers,adminOrderControls} from './admin-console.js';
@@ -257,6 +258,18 @@ function redrawCatalog(){updateCatalog(filter,search,catalogOptions);}
 bindAdminFilters();
 const adminHandlers=createAdminHandlers({refresh,orderDetails,uploadImage});
 const actions={
+ 'toggle-admin-alerts': async()=>{
+  if(!can('admin')||!state.user)throw new Error('Acesso exclusivo da administração.');
+  if(adminAlertsEnabled(state.user.id)){
+   await disableAdminAlerts(state.user.id);
+   toast('Sininho desativado neste dispositivo.');
+  }else{
+   await enableAdminAlerts(state.user.id);
+   toast('Sininho ativado neste dispositivo.');
+  }
+  await render();
+ },
+
  'scan-product-code':scanProductCode,
  'lookup-product-code':el=>lookupProductBarcode(document.getElementById('mp-product-form')?.elements.namedItem('ean')?.value),
  'stop-product-scan':stopProductScan,
